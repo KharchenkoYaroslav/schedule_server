@@ -45,7 +45,6 @@ app.get('/api/teachersList', (req, res) => {
     });
 });
 
-
 app.get('/api/getGroup', (req, res) => {
     const groupName = `"${req.query.groupName}"`;
     const semester = req.query.semester;
