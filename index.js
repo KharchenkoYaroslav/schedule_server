@@ -36,7 +36,7 @@ app.get('/api/teachersList', async (req, res) => {
     }
 });
 
-app.get('/api/getGroup', async (req, res) => {
+app.get('/api/getGroup', (req, res) => {
     const groupName = `"${req.query.groupName}"`;
     const semester = req.query.semester;
     const sql = `
@@ -51,7 +51,7 @@ app.get('/api/getGroup', async (req, res) => {
         a.audience_number,
         (
             SELECT JSON_ARRAYAGG(
-                JSON_OBJECT('full_name', t.full_name, 'post', t.post)
+                JSON_OBJECT(t.full_name, t.post)
             )
             FROM teachers_TB t
             WHERE JSON_CONTAINS(s.teachers_list, CONCAT('"', t.full_name, '"'), '$')
@@ -66,16 +66,17 @@ app.get('/api/getGroup', async (req, res) => {
         JSON_CONTAINS(s.groups_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    try {
-        const [rows] = await pool.query(sql, [groupName, semester]);
-        res.json(rows);
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching data');
-    }
+    db.query(sql, [groupName, semester], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching data');
+            return;
+        }
+        res.json(result);
+    });
 });
 
-app.get('/api/getTeacher', async (req, res) => {
+app.get('/api/getTeacher', (req, res) => {
     const teacherName = `"${req.query.teacherName}"`;
     const semester = req.query.semester;
     const sql = `
@@ -84,13 +85,7 @@ app.get('/api/getTeacher', async (req, res) => {
         s.day_number, 
         s.pair_number, 
         c.subject_name,
-        (
-            SELECT JSON_ARRAYAGG(
-                JSON_OBJECT('group_code', g.group_code)
-            )
-            FROM groups_TB g
-            WHERE JSON_CONTAINS(s.groups_list, CONCAT('"', g.group_code, '"'), '$')
-        ) AS groups_list, 
+        s.groups_list, 
         s.lesson_type, 
         s.visit_format, 
         a.building,
@@ -105,13 +100,14 @@ app.get('/api/getTeacher', async (req, res) => {
         JSON_CONTAINS(s.teachers_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    try {
-        const [rows] = await pool.query(sql, [teacherName, semester]);
-        res.json(rows);
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching data');
-    }
+    db.query(sql, [teacherName, semester], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching data');
+            return;
+        }
+        res.json(result);
+    });
 });
 
 module.exports = app;
