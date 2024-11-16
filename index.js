@@ -21,6 +21,7 @@ db.connect((err) => {
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
+
 app.get('/api/groupsList', (req, res) => {
     const sql = 'SELECT group_code FROM groups_TB';
     db.query(sql, (err, result) => {
