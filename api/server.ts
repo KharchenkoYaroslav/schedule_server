@@ -21,6 +21,8 @@ db.connect((err) => {
     console.log('Connected to MySQL database');
 });
 
+app.get("/", (req, res) => res.send("Express on Vercel"));
+
 app.get('/api/groupsList', (req, res) => {
     const sql = 'SELECT group_code FROM groups_TB';
     db.query(sql, (err, result) => {
@@ -119,7 +121,6 @@ app.get('/api/getTeacher', (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+
+app.listen(3000, () => console.log("Server ready on port 3000."));
+module.exports = app;
