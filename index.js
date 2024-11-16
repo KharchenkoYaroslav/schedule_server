@@ -16,28 +16,6 @@ const pool = mysql.createPool({
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-app.get('/api/groupsList', (req, res) => {
-    pool.query('SELECT group_code FROM groups_TB', (err, rows) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
-            return;
-        }
-        res.json(rows);
-    });
-});
-
-app.get('/api/teachersList', (req, res) => {
-    pool.query('SELECT full_name FROM teachers_TB', (err, rows) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
-            return;
-        }
-        res.json(rows);
-    });
-});
-
 app.get('/api/combinedList', (req, res) => {
     const queryGroups = 'SELECT group_code FROM groups_TB';
     const queryTeachers = 'SELECT full_name FROM teachers_TB';
