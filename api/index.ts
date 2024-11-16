@@ -6,6 +6,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const corsOptions = {
+    origin: ['https://schedule-eosin-two.vercel.app', 'http://localhost:3000'], // Додайте домени, з яких дозволені запити
+    optionsSuccessStatus: 200 // Деякі старі браузери (IE11, різні версії Safari) мають проблеми з 204
+};
+
+app.use(cors(corsOptions));
+
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
