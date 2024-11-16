@@ -51,7 +51,7 @@ app.get('/api/getGroup', async (req, res) => {
         a.audience_number,
         (
             SELECT JSON_ARRAYAGG(
-                JSON_OBJECT(t.full_name, t.post)
+                JSON_OBJECT('full_name', t.full_name, 'post', t.post)
             )
             FROM teachers_TB t
             WHERE JSON_CONTAINS(s.teachers_list, CONCAT('"', t.full_name, '"'), '$')
@@ -84,7 +84,13 @@ app.get('/api/getTeacher', async (req, res) => {
         s.day_number, 
         s.pair_number, 
         c.subject_name,
-        s.groups_list, 
+        (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT('group_code', g.group_code)
+            )
+            FROM groups_TB g
+            WHERE JSON_CONTAINS(s.groups_list, CONCAT('"', g.group_code, '"'), '$')
+        ) AS groups_list, 
         s.lesson_type, 
         s.visit_format, 
         a.building,
