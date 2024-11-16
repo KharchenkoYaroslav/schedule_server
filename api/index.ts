@@ -122,5 +122,5 @@ app.get('/api/getTeacher', (req, res) => {
 });
 
 
-app.listen(5000, () => console.log("Server ready on port 5000."));
+app.listen(3000, () => console.log("Server ready on port 3000."));
 module.exports = app;
