@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
 const app = express();
 app.use(express.json());
@@ -14,42 +14,29 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-pool.getConnection((err, connection) => {
-    if (err) {
-        console.error('Error connecting to MySQL:', err);
-        return;
-    }
-    console.log('Connected to MySQL database');
-    connection.release();
-});
-
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-app.get('/api/groupsList', (req, res) => {
-    const sql = 'SELECT group_code FROM groups_TB';
-    pool.query(sql, (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
-            return;
-        }
-        res.json(result);
-    });
+app.get('/api/groupsList', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT group_code FROM groups_TB');
+        res.json(rows);
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching data');
+    }
 });
 
-app.get('/api/teachersList', (req, res) => {
-    const sql = 'SELECT full_name FROM teachers_TB';
-    pool.query(sql, (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
-            return;
-        }
-        res.json(result);
-    });
+app.get('/api/teachersList', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT full_name FROM teachers_TB');
+        res.json(rows);
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching data');
+    }
 });
 
-app.get('/api/getGroup', (req, res) => {
+app.get('/api/getGroup', async (req, res) => {
     const groupName = `"${req.query.groupName}"`;
     const semester = req.query.semester;
     const sql = `
@@ -79,17 +66,16 @@ app.get('/api/getGroup', (req, res) => {
         JSON_CONTAINS(s.groups_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    pool.query(sql, [groupName, semester], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
-            return;
-        }
-        res.json(result);
-    });
+    try {
+        const [rows] = await pool.query(sql, [groupName, semester]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching data');
+    }
 });
 
-app.get('/api/getTeacher', (req, res) => {
+app.get('/api/getTeacher', async (req, res) => {
     const teacherName = `"${req.query.teacherName}"`;
     const semester = req.query.semester;
     const sql = `
@@ -113,15 +99,13 @@ app.get('/api/getTeacher', (req, res) => {
         JSON_CONTAINS(s.teachers_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    pool.query(sql, [teacherName, semester], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
-            return;
-        }
-        res.json(result);
-    });
+    try {
+        const [rows] = await pool.query(sql, [teacherName, semester]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching data');
+    }
 });
 
-app.listen(5000, () => console.log("Server ready on port 5000."));
 module.exports = app;
