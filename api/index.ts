@@ -1,19 +1,8 @@
 const express = require('express');
 const mysql = require('mysql');
-const cors = require('cors');
 
 const app = express();
 app.use(express.json());
-// Налаштування CORS
-const corsOptions = {
-    origin: 'https://schedule-eosin-two.vercel.app', 
-    credentials: true,
-};
-
-app.use(cors(corsOptions));
-
-app.options('/api/getGroup', cors(corsOptions));
-app.options('/api/getTeacher', cors(corsOptions));
 
 const allowCors = fn => async (req, res) => {
     res.setHeader('Access-Control-Allow-Credentials', true)
