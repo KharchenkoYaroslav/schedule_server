@@ -1,18 +1,8 @@
 const express = require('express');
 const mysql = require('mysql');
-const cors = require('cors');
 
 const app = express();
-app.use(cors());
 app.use(express.json());
-
-const corsOptions = {
-    origin: ['https://schedule-eosin-two.vercel.app', 'http://localhost:3000'], // Додайте домени, з яких дозволені запити
-    optionsSuccessStatus: 200, // Деякі старі браузери (IE11, різні версії Safari) мають проблеми з 204
-    allowedHeaders: ['Content-Type', 'Authorization'] // Дозволити передачу заголовків Content-Type та Authorization
-};
-
-app.use(cors(corsOptions));
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
