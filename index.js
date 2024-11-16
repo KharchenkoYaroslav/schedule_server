@@ -4,7 +4,6 @@ const mysql = require('mysql');
 const app = express();
 app.use(express.json());
 
-
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -30,7 +29,6 @@ app.get('/api/groupsList', (req, res) => {
             res.status(500).send('Error fetching data');
             return;
         }
-        res.setHeader('Access-Control-Allow-Origin', 'https://schedule-eosin-two.vercel.app'); // Додайте ваш домен
         res.json(result);
     });
 });
@@ -43,21 +41,13 @@ app.get('/api/teachersList', (req, res) => {
             res.status(500).send('Error fetching data');
             return;
         }
-        res.setHeader('Access-Control-Allow-Origin', 'https://schedule-eosin-two.vercel.app'); // Додайте ваш домен
         res.json(result);
     });
 });
 
 app.get('/api/getGroup', (req, res) => {
-    const groupName = req.query.groupName;
+    const groupName = `"${req.query.groupName}"`;
     const semester = req.query.semester;
-
-    if (!groupName || !semester) {
-        console.error('Missing required parameters: groupName or semester');
-        res.status(400).send('Missing required parameters: groupName or semester');
-        return;
-    }
-
     const sql = `
     SELECT 
         s.week_number, 
@@ -91,21 +81,13 @@ app.get('/api/getGroup', (req, res) => {
             res.status(500).send('Error fetching data');
             return;
         }
-        res.setHeader('Access-Control-Allow-Origin', 'https://schedule-eosin-two.vercel.app'); // Додайте ваш домен
         res.json(result);
     });
 });
 
 app.get('/api/getTeacher', (req, res) => {
-    const teacherName = req.query.teacherName;
+    const teacherName = `"${req.query.teacherName}"`;
     const semester = req.query.semester;
-
-    if (!teacherName || !semester) {
-        console.error('Missing required parameters: teacherName or semester');
-        res.status(400).send('Missing required parameters: teacherName or semester');
-        return;
-    }
-
     const sql = `
     SELECT 
         s.week_number, 
@@ -133,10 +115,10 @@ app.get('/api/getTeacher', (req, res) => {
             res.status(500).send('Error fetching data');
             return;
         }
-        res.setHeader('Access-Control-Allow-Origin', 'https://schedule-eosin-two.vercel.app'); // Додайте ваш домен
         res.json(result);
     });
 });
+
 
 app.listen(3000, () => console.log("Server ready on port 3000."));
 module.exports = app;
