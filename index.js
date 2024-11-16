@@ -1,30 +1,33 @@
 const express = require('express');
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 const app = express();
 app.use(express.json());
 
-const db = mysql.createConnection({
+const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE
+    database: process.env.DB_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-db.connect((err) => {
+pool.getConnection((err, connection) => {
     if (err) {
         console.error('Error connecting to MySQL:', err);
         return;
     }
     console.log('Connected to MySQL database');
+    connection.release();
 });
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-
 app.get('/api/groupsList', (req, res) => {
     const sql = 'SELECT group_code FROM groups_TB';
-    db.query(sql, (err, result) => {
+    pool.query(sql, (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
@@ -36,7 +39,7 @@ app.get('/api/groupsList', (req, res) => {
 
 app.get('/api/teachersList', (req, res) => {
     const sql = 'SELECT full_name FROM teachers_TB';
-    db.query(sql, (err, result) => {
+    pool.query(sql, (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
@@ -76,7 +79,7 @@ app.get('/api/getGroup', (req, res) => {
         JSON_CONTAINS(s.groups_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    db.query(sql, [groupName, semester], (err, result) => {
+    pool.query(sql, [groupName, semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
@@ -110,7 +113,7 @@ app.get('/api/getTeacher', (req, res) => {
         JSON_CONTAINS(s.teachers_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    db.query(sql, [teacherName, semester], (err, result) => {
+    pool.query(sql, [teacherName, semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
@@ -119,7 +122,6 @@ app.get('/api/getTeacher', (req, res) => {
         res.json(result);
     });
 });
-
 
 app.listen(5000, () => console.log("Server ready on port 5000."));
 module.exports = app;
