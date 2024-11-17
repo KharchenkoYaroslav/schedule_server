@@ -1,6 +1,5 @@
 const express = require('express');
 const mysql = require('mysql2');
-const crypto = require('crypto');
 
 const app = express();
 app.use(express.json());
@@ -15,25 +14,9 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-let etags = {};
-
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
 app.get('/api/combinedList', (req, res) => {
-    const key = 'combinedList';
-
-    const now = new Date();
-    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
-
-    if (etags[key] && etags[key].lastUpdate > oneDayAgo) {
-        const etag = etags[key].etag;
-
-        if (req.headers['if-none-match'] === etag) {
-            res.status(304).end();
-            return;
-        }
-    }
-
     const queryGroups = 'SELECT group_code FROM groups_TB';
     const queryTeachers = 'SELECT full_name FROM teachers_TB';
 
@@ -56,10 +39,6 @@ app.get('/api/combinedList', (req, res) => {
                 teachers: teachers
             };
 
-            const etag = crypto.createHash('md5').update(JSON.stringify(data)).digest('hex');
-            etags[key] = { etag, lastUpdate: new Date() };
-
-            res.set('ETag', etag);
             res.json(data);
         });
     });
@@ -68,20 +47,6 @@ app.get('/api/combinedList', (req, res) => {
 app.get('/api/getGroup', (req, res) => {
     const groupName = `"${req.query.groupName}"`;
     const semester = req.query.semester;
-    const key = `getGroup:${groupName}:${semester}`;
-
-    const now = new Date();
-    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
-
-    if (etags[key] && etags[key].lastUpdate > oneDayAgo) {
-        const etag = etags[key].etag;
-
-        if (req.headers['if-none-match'] === etag) {
-            res.status(304).end();
-            return;
-        }
-    }
-
     const sql = `
     SELECT 
         s.week_number, 
@@ -116,10 +81,6 @@ app.get('/api/getGroup', (req, res) => {
             return;
         }
 
-        const etag = crypto.createHash('md5').update(JSON.stringify(result)).digest('hex');
-        etags[key] = { etag, lastUpdate: new Date() };
-
-        res.set('ETag', etag);
         res.json(result);
     });
 });
@@ -127,20 +88,6 @@ app.get('/api/getGroup', (req, res) => {
 app.get('/api/getTeacher', (req, res) => {
     const teacherName = `"${req.query.teacherName}"`;
     const semester = req.query.semester;
-    const key = `getTeacher:${teacherName}:${semester}`;
-
-    const now = new Date();
-    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
-
-    if (etags[key] && etags[key].lastUpdate > oneDayAgo) {
-        const etag = etags[key].etag;
-
-        if (req.headers['if-none-match'] === etag) {
-            res.status(304).end();
-            return;
-        }
-    }
-
     const sql = `
     SELECT 
         s.week_number, 
@@ -169,10 +116,6 @@ app.get('/api/getTeacher', (req, res) => {
             return;
         }
 
-        const etag = crypto.createHash('md5').update(JSON.stringify(result)).digest('hex');
-        etags[key] = { etag, lastUpdate: new Date() };
-
-        res.set('ETag', etag);
         res.json(result);
     });
 });
