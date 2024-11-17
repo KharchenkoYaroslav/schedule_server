@@ -1,5 +1,6 @@
 const express = require('express');
 const mysql = require('mysql2');
+const crypto = require('crypto');
 
 const app = express();
 app.use(express.json());
@@ -34,10 +35,19 @@ app.get('/api/combinedList', (req, res) => {
                 return;
             }
 
-            res.json({
+            const data = {
                 groups: groups,
                 teachers: teachers
-            });
+            };
+
+            const etag = crypto.createHash('md5').update(JSON.stringify(data)).digest('hex');
+
+            if (req.headers['if-none-match'] === etag) {
+                res.status(304).end();
+            } else {
+                res.set('ETag', etag);
+                res.json(data);
+            }
         });
     });
 });
@@ -78,7 +88,15 @@ app.get('/api/getGroup', (req, res) => {
             res.status(500).send('Error fetching data');
             return;
         }
-        res.json(result);
+
+        const etag = crypto.createHash('md5').update(JSON.stringify(result)).digest('hex');
+
+        if (req.headers['if-none-match'] === etag) {
+            res.status(304).end();
+        } else {
+            res.set('ETag', etag);
+            res.json(result);
+        }
     });
 });
 
@@ -112,7 +130,15 @@ app.get('/api/getTeacher', (req, res) => {
             res.status(500).send('Error fetching data');
             return;
         }
-        res.json(result);
+
+        const etag = crypto.createHash('md5').update(JSON.stringify(result)).digest('hex');
+
+        if (req.headers['if-none-match'] === etag) {
+            res.status(304).end();
+        } else {
+            res.set('ETag', etag);
+            res.json(result);
+        }
     });
 });
 
