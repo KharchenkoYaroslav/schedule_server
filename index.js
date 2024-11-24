@@ -127,20 +127,9 @@ app.get('/api/getTeacher', (req, res) => {
 });
 
 const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш секретний ключ
-const ENCRYPTION_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'; // Замініть на ваш ключ шифрування
 
-function aesEncrypt(data, key) {
-    const cipher = crypto.createCipheriv('aes-128-ecb', Buffer.from(key), '');
-    let encrypted = cipher.update(data, 'utf8', 'binary');
-    encrypted += cipher.final('binary');
-    return Buffer.from(encrypted, 'binary');
-}
-
-function aesDecrypt(encrypted, key) {
-    const decipher = crypto.createDecipheriv('aes-128-ecb', Buffer.from(key), '');
-    let decrypted = decipher.update(encrypted, 'binary', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+function hashPassword(password) {
+    return crypto.createHash('sha256').update(password).digest('hex');
 }
 
 app.post('/api/login', async (req, res) => {
@@ -160,28 +149,22 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
-        try {
-            const encryptedPassword = aesEncrypt(password, ENCRYPTION_KEY);
+        const passwordHash = hashPassword(password);
 
-            // Порівняння бінарних даних безпосередньо
-            if (Buffer.compare(encryptedPassword, user.password) === 0) {
-                try {
-                    console.log('Generating JWT token...');
-                    const payload = { id: user.id, login: user.login };
-                    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-                    console.log('Token generated:', token);
+        if (passwordHash === user.password_hash) {
+            try {
+                console.log('Generating JWT token...');
+                const payload = { id: user.id, login: user.login };
+                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+                console.log('Token generated:', token);
 
-                    res.json({ token });
-                } catch (jwtError) {
-                    console.error('Error generating JWT token:', jwtError);
-                    res.status(500).send(`Error generating JWT token ${jwtError}`);
-                }
-            } else {
-                res.status(401).send('Invalid credentials');
+                res.json({ token });
+            } catch (jwtError) {
+                console.error('Error generating JWT token:', jwtError);
+                res.status(500).send(`Error generating JWT token ${jwtError}`);
             }
-        } catch (err) {
-            console.error('Error during login:', err);
-            res.status(500).send('Error during login');
+        } else {
+            res.status(401).send('Invalid credentials');
         }
     });
 });
