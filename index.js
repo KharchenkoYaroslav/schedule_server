@@ -128,12 +128,12 @@ app.post('/api/login', async (req, res) => {
     pool.query(query, [login], async (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
-            res.status(501).send('Error fetching data');
+            res.status(500).send('Error fetching data');
             return;
         }
 
         if (results.length === 0) {
-            res.status(402).send('Invalid credentials');
+            res.status(401).send('Invalid credentials');
             return;
         }
 
@@ -148,7 +148,7 @@ app.post('/api/login', async (req, res) => {
 
             res.json({ token });
         } else {
-            res.status(403).send('Invalid credentials');
+            res.status(401).send('Invalid credentials: '+ password + ' ' + user.password);
         }
     });
 });
