@@ -148,7 +148,7 @@ app.post('/api/login', async (req, res) => {
 
             res.json({ token });
         } else {
-            res.status(401).send('Invalid credentials: '+ password + ' ' + user.password);
+            res.status(401).send(`Invalid credentials. Input password: ${password}, Stored password: ${user.password}`);
         }
     });
 });
