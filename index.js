@@ -128,6 +128,8 @@ app.get('/api/getTeacher', (req, res) => {
 
 const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш секретний ключ
 
+const ENCRYPTION_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'; // Замініть на ваш ключ шифрування
+
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
@@ -146,14 +148,11 @@ app.post('/api/login', async (req, res) => {
 
         const user = results[0];
         try {
-            const cipher = crypto.createCipher('aes-256-cbc', '5f4dcc3b5aa765d61d8327deb882cf99');
-            let encrypted = cipher.update(password, 'utf8', 'hex');
-            encrypted += cipher.final('hex');
+            const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
+            let encrypted = cipher.update(password, 'utf8', 'binary');
+            encrypted += cipher.final('binary');
 
-
-            //const decryptedPassword = decrypt(user.password);
-
-            if (encrypted === user.password) {
+            if (Buffer.from(encrypted, 'binary').equals(user.password)) {
                 try {
                     console.log('Generating JWT token...');
                     const payload = { id: user.id, login: user.login };
@@ -166,12 +165,14 @@ app.post('/api/login', async (req, res) => {
                     res.status(500).send(`Error generating JWT token ${jwtError}`);
                 }
             } else {
-                res.status(401).send(`Invalid credentials. ${encrypted} ${user.password}`);
+                res.status(401).send('Invalid credentials');
             }
         } catch (err) {
-            res.status(505).send(err);
+            console.error('Error during login:', err);
+            res.status(500).send('Error during login');
         }
     });
 });
+
 
 export default app;
