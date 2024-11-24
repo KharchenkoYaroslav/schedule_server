@@ -142,9 +142,9 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
-        const passwordMatch = await bcrypt.compare(password, user.password);
+        //const passwordMatch = await bcrypt.compare(password, user.password);
 
-        if (passwordMatch) {
+        if (password === user.password) {
             try {
                 console.log('Generating JWT token...');
                 const key = await jose.JWK.asKey(process.env.JWT_SECRET, 'pem');
