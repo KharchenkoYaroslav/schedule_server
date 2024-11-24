@@ -1,6 +1,6 @@
 import express from 'express';
 import mysql from 'mysql2';
-import jose from 'node-jose';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs'; // Використовуйте bcryptjs
 import dotenv from 'dotenv';
 
@@ -125,6 +125,8 @@ app.get('/api/getTeacher', (req, res) => {
     });
 });
 
+const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш секретний ключ
+
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
@@ -147,19 +149,8 @@ app.post('/api/login', async (req, res) => {
         if (password === user.password) {
             try {
                 console.log('Generating JWT token...');
-                
-                // Перевірка формату PEM ключа
-                if (!process.env.JWT_SECRET.includes('-----BEGIN PRIVATE KEY-----') || !process.env.JWT_SECRET.includes('-----END PRIVATE KEY-----')) {
-                    throw new Error('Invalid PEM formatted message.');
-                }
-
-                const key = await jose.JWK.asKey(process.env.JWT_SECRET, 'pem');
-                console.log('Key generated:', key);
                 const payload = { id: user.id, login: user.login };
-                console.log('Payload:', payload);
-                const token = await jose.JWS.createSign({ format: 'compact' }, key)
-                    .update(JSON.stringify(payload))
-                    .final();
+                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
                 console.log('Token generated:', token);
 
                 res.json({ token });
