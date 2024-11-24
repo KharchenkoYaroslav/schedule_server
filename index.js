@@ -155,7 +155,7 @@ app.post('/api/login', async (req, res) => {
 
         //const decryptedPassword = decrypt(user.password);
 
-        if (password === decrypted) {
+        if (password === user.password) {
             try {
                 console.log('Generating JWT token...');
                 const payload = { id: user.id, login: user.login };
