@@ -144,7 +144,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
-        //const decryptedPassword = decrypt(user.password);
+        const decryptedPassword = decrypt(user.password);
 
         if (password === user.password) {
             try {
