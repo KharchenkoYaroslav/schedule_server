@@ -130,11 +130,17 @@ const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш се�
 const ENCRYPTION_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'; // Замініть на ваш ключ шифрування
 
 function aesEncrypt(data, key) {
-    const iv = Buffer.alloc(16, 0); // Ініціалізаційний вектор (IV)
-    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key), iv);
+    const cipher = crypto.createCipheriv('aes-128-ecb', Buffer.from(key), '');
     let encrypted = cipher.update(data, 'utf8', 'binary');
     encrypted += cipher.final('binary');
     return Buffer.from(encrypted, 'binary');
+}
+
+function aesDecrypt(encrypted, key) {
+    const decipher = crypto.createDecipheriv('aes-128-ecb', Buffer.from(key), '');
+    let decrypted = decipher.update(encrypted, 'binary', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
 }
 
 app.post('/api/login', async (req, res) => {
@@ -157,11 +163,8 @@ app.post('/api/login', async (req, res) => {
         try {
             const encryptedPassword = aesEncrypt(password, ENCRYPTION_KEY);
 
-            // Перетворення бінарних даних в hex для порівняння
-            const encryptedPasswordHex = encryptedPassword.toString('hex');
-            const userPasswordHex = user.password.toString('hex');
-
-            if (encryptedPasswordHex === userPasswordHex) {
+            // Порівняння бінарних даних безпосередньо
+            if (Buffer.compare(encryptedPassword, user.password) === 0) {
                 try {
                     console.log('Generating JWT token...');
                     const payload = { id: user.id, login: user.login };
@@ -174,7 +177,7 @@ app.post('/api/login', async (req, res) => {
                     res.status(500).send(`Error generating JWT token ${jwtError}`);
                 }
             } else {
-                res.status(401).send(`Invalid credentials. Encrypted password: ${encryptedPasswordHex}, User password: ${userPasswordHex}`);
+                res.status(401).send('Invalid credentials');
             }
         } catch (err) {
             console.error('Error during login:', err);
@@ -182,4 +185,5 @@ app.post('/api/login', async (req, res) => {
         }
     });
 });
+
 export default app;
