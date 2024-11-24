@@ -150,7 +150,7 @@ app.post('/api/login', async (req, res) => {
 
             res.json({ token });
         } else {
-            res.status(402).send('Invalid credentials');
+            res.status(401).send('Invalid credentials');
         }
     });
 });
