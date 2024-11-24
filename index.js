@@ -142,11 +142,17 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
-        //const passwordMatch = await bcrypt.compare(password, user.password);
+        //const passwordMatch = await bcrypt.compare(password, user.password); я спеціально покищо не Використовую це
 
         if (password === user.password) {
             try {
                 console.log('Generating JWT token...');
+                
+                // Перевірка формату PEM ключа
+                if (!process.env.JWT_SECRET.includes('-----BEGIN PRIVATE KEY-----') || !process.env.JWT_SECRET.includes('-----END PRIVATE KEY-----')) {
+                    throw new Error('Invalid PEM formatted message.');
+                }
+
                 const key = await jose.JWK.asKey(process.env.JWT_SECRET, 'pem');
                 console.log('Key generated:', key);
                 const payload = { id: user.id, login: user.login };
