@@ -171,7 +171,7 @@ app.post('/api/login', async (req, res) => {
                     res.status(500).send(`Error generating JWT token ${jwtError}`);
                 }
             } else {
-                res.status(401).send('Invalid credentials');
+                res.status(401).send(`Invalid credentials ${encryptedPassword}, ${user.password}`);
             }
         } catch (err) {
             console.error('Error during login:', err);
