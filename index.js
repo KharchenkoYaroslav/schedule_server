@@ -139,13 +139,13 @@ app.post('/api/login', async (req, res) => {
     const query = 'SELECT * FROM admin_list_TB WHERE login = ?';
     pool.query(query, [login], async (err, results) => {
         if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
+            console.error('Помилка виконання запиту:', err);
+            res.status(500).send('Помилка отримання даних');
             return;
         }
 
         if (results.length === 0) {
-            res.status(401).send('Invalid credentials');
+            res.status(401).send('Невірні данні');
             return;
         }
 
@@ -154,18 +154,18 @@ app.post('/api/login', async (req, res) => {
 
         if (passwordHash === user.password_hash) {
             try {
-                console.log('Generating JWT token...');
+                console.log('Генерація JWT токена...');
                 const payload = { id: user.id, login: user.login };
                 const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-                console.log('Token generated:', token);
+                console.log('Токен згенеровано:', token);
 
                 res.json({ token });
             } catch (jwtError) {
-                console.error('Error generating JWT token:', jwtError);
-                res.status(500).send(`Error generating JWT token ${jwtError}`);
+                console.error('Помилка генерації JWT токена:', jwtError);
+                res.status(500).send(`Помилка генерації JWT токена ${jwtError}`);
             }
         } else {
-            res.status(401).send('Invalid credentials');
+            res.status(401).send('Невірні облікові дані');
         }
     });
 });
