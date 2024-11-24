@@ -149,26 +149,27 @@ app.post('/api/login', async (req, res) => {
             const cipher = crypto.createCipher('aes-256-cbc', '5f4dcc3b5aa765d61d8327deb882cf99');
             let encrypted = cipher.update(password, 'utf8', 'hex');
             encrypted += cipher.final('hex');
+
+
+            //const decryptedPassword = decrypt(user.password);
+
+            if (encrypted === user.password) {
+                try {
+                    console.log('Generating JWT token...');
+                    const payload = { id: user.id, login: user.login };
+                    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+                    console.log('Token generated:', token);
+
+                    res.json({ token });
+                } catch (jwtError) {
+                    console.error('Error generating JWT token:', jwtError);
+                    res.status(500).send(`Error generating JWT token ${jwtError}`);
+                }
+            } else {
+                res.status(401).send(`Invalid credentials. ${encrypted} ${user.password}`);
+            }
         } catch (err) {
             res.status(505).send(err);
-        }
-
-        //const decryptedPassword = decrypt(user.password);
-
-        if (encrypted === user.password) {
-            try {
-                console.log('Generating JWT token...');
-                const payload = { id: user.id, login: user.login };
-                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-                console.log('Token generated:', token);
-
-                res.json({ token });
-            } catch (jwtError) {
-                console.error('Error generating JWT token:', jwtError);
-                res.status(500).send(`Error generating JWT token ${jwtError}`);
-            }
-        } else {
-            res.status(401).send(`Invalid credentials. ${encrypted} ${user.password}`);
         }
     });
 });
