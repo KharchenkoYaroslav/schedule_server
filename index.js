@@ -126,7 +126,7 @@ app.get('/api/getTeacher', (req, res) => {
     });
 });
 
-const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш секретний ключ
+const JWT_SECRET = process.env.JWT_SECRET; 
 
 function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('hex');
