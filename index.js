@@ -165,7 +165,7 @@ app.post('/api/login', async (req, res) => {
                 res.status(500).send(`Помилка генерації JWT токена ${jwtError}`);
             }
         } else {
-            res.status(401).send('Невірні облікові дані');
+            res.status(401).send('Невірні данні');
         }
     });
 });
