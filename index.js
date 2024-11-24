@@ -1,5 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
+const bcrypt = require('bcrypt'); // Для хешування паролів
+const jwt = require('jsonwebtoken'); // Для генерації JWT токенів
 
 const app = express();
 app.use(express.json());
@@ -117,6 +119,40 @@ app.get('/api/getTeacher', (req, res) => {
         }
 
         res.json(result);
+    });
+});
+
+app.post('/api/login', (req, res) => {
+    const { login, password } = req.body;
+
+    const query = 'SELECT * FROM admin_list_TB WHERE login = ?';
+    pool.query(query, [login], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching data');
+            return;
+        }
+
+        if (results.length === 0) {
+            res.status(401).send('Invalid credentials');
+            return;
+        }
+
+        const user = results[0];
+        bcrypt.compare(password, user.password, (err, result) => {
+            if (err) {
+                console.error('Error comparing passwords:', err);
+                res.status(500).send('Error comparing passwords');
+                return;
+            }
+
+            if (result) {
+                const token = jwt.sign({ id: user.id, login: user.login }, process.env.JWT_SECRET, { expiresIn: '1h' });
+                res.json({ token });
+            } else {
+                res.status(401).send('Invalid credentials');
+            }
+        });
     });
 });
 
