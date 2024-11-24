@@ -122,7 +122,7 @@ app.get('/api/getTeacher', (req, res) => {
         res.json(result);
     });
 });
-
+/*
 app.post('/api/login', (req, res) => {
     const { login, password } = req.body;
 
@@ -156,5 +156,5 @@ app.post('/api/login', (req, res) => {
         });
     });
 });
-
+*/
 module.exports = app;
