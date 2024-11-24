@@ -133,7 +133,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         if (results.length === 0) {
-            res.status(401).send('Invalid credentials');
+            res.status(402).send('Invalid credentials');
             return;
         }
 
@@ -148,7 +148,7 @@ app.post('/api/login', async (req, res) => {
 
             res.json({ token });
         } else {
-            res.status(401).send('Invalid credentials');
+            res.status(403).send('Invalid credentials');
         }
     });
 });
