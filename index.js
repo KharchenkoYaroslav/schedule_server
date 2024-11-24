@@ -1,7 +1,7 @@
 import express from 'express';
 import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
-import { decrypt } from './encryption.js';
+import { encrypt, decrypt } from './encryption.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -159,7 +159,7 @@ app.post('/api/login', async (req, res) => {
                 res.status(500).send(`Error generating JWT token ${jwtError}`);
             }
         } else {
-            res.status(401).send('Invalid credentials');
+            res.status(401).send(`Invalid credentials.`);
         }
     });
 });
