@@ -121,7 +121,6 @@ app.get('/api/getTeacher', (req, res) => {
     });
 });
 
-
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
@@ -129,7 +128,7 @@ app.post('/api/login', async (req, res) => {
     pool.query(query, [login], async (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
+            res.status(501).send('Error fetching data');
             return;
         }
 
