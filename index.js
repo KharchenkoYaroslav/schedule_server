@@ -1,7 +1,6 @@
 import express from 'express';
 import mysql from 'mysql2';
 import jose from 'node-jose';
-import bcrypt from 'bcryptjs'; // Використовуйте bcryptjs
 
 const app = express();
 app.use(express.json());
@@ -139,9 +138,8 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
-        const passwordMatch = await bcrypt.compare(password, user.password);
-
-        if (passwordMatch) {
+        // Пряме порівняння паролів без хешування
+        if (password === user.password) {
             const key = await jose.JWK.asKey(process.env.JWT_SECRET, 'pem');
             const payload = { id: user.id, login: user.login };
             const token = await jose.JWS.createSign({ format: 'compact' }, key)

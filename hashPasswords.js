@@ -1,4 +1,4 @@
-require('dotenv').config(); // Завантажте змінні середовища з файлу .env
+require('dotenv').config(); 
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 
