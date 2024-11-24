@@ -1,7 +1,7 @@
 import express from 'express';
 import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
-import { encrypt } from './encryption.js';
+//import { encrypt } from './encryption.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
