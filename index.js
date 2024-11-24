@@ -127,7 +127,6 @@ app.get('/api/getTeacher', (req, res) => {
 });
 
 const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш секретний ключ
-
 const ENCRYPTION_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'; // Замініть на ваш ключ шифрування
 
 function aesEncrypt(data, key) {
@@ -158,7 +157,11 @@ app.post('/api/login', async (req, res) => {
         try {
             const encryptedPassword = aesEncrypt(password, ENCRYPTION_KEY);
 
-            if (Buffer.compare(encryptedPassword, user.password) === 0) {
+            // Перетворення бінарних даних в hex для порівняння
+            const encryptedPasswordHex = encryptedPassword.toString('hex');
+            const userPasswordHex = user.password.toString('hex');
+
+            if (encryptedPasswordHex === userPasswordHex) {
                 try {
                     console.log('Generating JWT token...');
                     const payload = { id: user.id, login: user.login };
@@ -171,7 +174,7 @@ app.post('/api/login', async (req, res) => {
                     res.status(500).send(`Error generating JWT token ${jwtError}`);
                 }
             } else {
-                res.status(401).send(`Invalid credentials ${encryptedPassword}, ${user.password}`);
+                res.status(401).send(`Invalid credentials. Encrypted password: ${encryptedPasswordHex}, User password: ${userPasswordHex}`);
             }
         } catch (err) {
             console.error('Error during login:', err);
@@ -179,5 +182,4 @@ app.post('/api/login', async (req, res) => {
         }
     });
 });
-
 export default app;
