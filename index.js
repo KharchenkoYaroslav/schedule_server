@@ -1,8 +1,9 @@
 const express = require('express');
 const mysql = require('mysql2');
+/*
 const bcrypt = require('bcrypt'); // Для хешування паролів
 const jwt = require('jsonwebtoken'); // Для генерації JWT токенів
-
+*/
 const app = express();
 app.use(express.json());
 
