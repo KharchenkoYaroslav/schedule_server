@@ -145,6 +145,10 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
+
+        const decipher = crypto.createDecipher('aes-256-cbc', process.env.SECRET_KEY);
+        let decrypted = decipher.update(user.password, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
         //const decryptedPassword = decrypt(user.password);
 
         if (password === user.password) {
