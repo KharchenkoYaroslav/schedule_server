@@ -1,13 +1,12 @@
-const express = require('express');
-const mysql = require('mysql2');
-
-const jwt = require('jsonwebtoken'); // Для генерації JWT токенів
-const bcrypt = require('bcrypt'); // Для хешування паролів
+import express from 'express';
+import mysql from 'mysql2';
+import jose from 'node-jose';
+import bcrypt from 'bcrypt'; // Використовуйте bcrypt, якщо він підтримується
 
 const app = express();
 app.use(express.json());
 
- const pool = mysql.createPool({
+const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -16,7 +15,6 @@ app.use(express.json());
     connectionLimit: 10,
     queueLimit: 0
 });
-
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
@@ -123,12 +121,12 @@ app.get('/api/getTeacher', (req, res) => {
         res.json(result);
     });
 });
-/*
-app.post('/api/login', (req, res) => {
+
+app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
     const query = 'SELECT * FROM admin_list_TB WHERE login = ?';
-    pool.query(query, [login], (err, results) => {
+    pool.query(query, [login], async (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
@@ -141,21 +139,20 @@ app.post('/api/login', (req, res) => {
         }
 
         const user = results[0];
-        bcrypt.compare(password, user.password, (err, result) => {
-            if (err) {
-                console.error('Error comparing passwords:', err);
-                res.status(500).send('Error comparing passwords');
-                return;
-            }
+        const passwordMatch = await bcrypt.compare(password, user.password);
 
-            if (result) {
-                const token = jwt.sign({ id: user.id, login: user.login }, process.env.JWT_SECRET, { expiresIn: '1h' });
-                res.json({ token });
-            } else {
-                res.status(401).send('Invalid credentials');
-            }
-        });
+        if (passwordMatch) {
+            const key = await jose.JWK.asKey(process.env.JWT_SECRET, 'pem');
+            const payload = { id: user.id, login: user.login };
+            const token = await jose.JWS.createSign({ format: 'compact' }, key)
+                .update(JSON.stringify(payload))
+                .final();
+
+            res.json({ token });
+        } else {
+            res.status(401).send('Invalid credentials');
+        }
     });
 });
-*/
-module.exports = app;
+
+export default app;
