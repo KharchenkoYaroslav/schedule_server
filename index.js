@@ -3,6 +3,7 @@ import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
 import { encrypt, decrypt } from './encryption.js';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -144,7 +145,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
-        const decryptedPassword = decrypt(user.password);
+        //const decryptedPassword = decrypt(user.password);
 
         if (password === user.password) {
             try {
