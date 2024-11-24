@@ -140,13 +140,18 @@ app.post('/api/login', async (req, res) => {
         const user = results[0];
 
         if (password === user.password) {
-            const key = await jose.JWK.asKey(process.env.JWT_SECRET, 'pem');
-            const payload = { id: user.id, login: user.login };
-            const token = await jose.JWS.createSign({ format: 'compact' }, key)
-                .update(JSON.stringify(payload))
-                .final();
+            try {
+                const key = await jose.JWK.asKey(process.env.JWT_SECRET, 'pem');
+                const payload = { id: user.id, login: user.login };
+                const token = await jose.JWS.createSign({ format: 'compact' }, key)
+                    .update(JSON.stringify(payload))
+                    .final();
 
-            res.json({ token });
+                res.json({ token });
+            } catch (jwtError) {
+                console.error('Error generating JWT token:', jwtError);
+                res.status(500).send('Error generating JWT token');
+            }
         } else {
             res.status(401).send(`Invalid credentials. Input password: ${password}, Stored password: ${user.password}`);
         }
