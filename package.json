@@ -12,6 +12,7 @@
     "jsonwebtoken": "^9.0.2",
     "mysql": "^2.18.1",
     "mysql2": "^3.11.4"
+    
   },
   "devDependencies": {
     "@types/node": "^22.9.0"
