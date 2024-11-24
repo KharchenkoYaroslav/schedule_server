@@ -159,7 +159,7 @@ app.post('/api/login', async (req, res) => {
                 res.json({ token });
             } catch (jwtError) {
                 console.error('Error generating JWT token:', jwtError);
-                res.status(500).send('Error generating JWT token');
+                res.status(500).send(`Error generating JWT token ${jwtError}`);
             }
         } else {
             res.status(401).send(`Invalid credentials. Input password: ${password}, Stored password: ${user.password}`);
