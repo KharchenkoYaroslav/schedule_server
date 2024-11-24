@@ -126,7 +126,7 @@ app.get('/api/getTeacher', (req, res) => {
     });
 });
 
-const JWT_SECRET = process.env.JWT_SECRET; 
+const JWT_SECRET = process.env.SECRET; 
 
 function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('hex');
