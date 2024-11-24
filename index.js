@@ -1,7 +1,7 @@
 import express from 'express';
 import mysql from 'mysql2';
-import jose from 'node-jose';
-import bcrypt from 'bcrypt'; // Використовуйте bcrypt, якщо він підтримується
+//import jose from 'node-jose';
+//import bcrypt from 'bcrypt'; // Використовуйте bcrypt, якщо він підтримується
 
 const app = express();
 app.use(express.json());
@@ -121,7 +121,7 @@ app.get('/api/getTeacher', (req, res) => {
         res.json(result);
     });
 });
-
+/*
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
@@ -154,5 +154,5 @@ app.post('/api/login', async (req, res) => {
         }
     });
 });
-
+*/
 export default app;
