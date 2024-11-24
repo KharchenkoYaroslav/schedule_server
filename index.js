@@ -125,6 +125,8 @@ app.get('/api/getTeacher', (req, res) => {
     });
 });
 
+const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш секретний ключ
+
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
@@ -148,7 +150,7 @@ app.post('/api/login', async (req, res) => {
             try {
                 console.log('Generating JWT token...');
                 const payload = { id: user.id, login: user.login };
-                const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
                 console.log('Token generated:', token);
 
                 res.json({ token });
