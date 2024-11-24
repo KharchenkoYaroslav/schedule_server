@@ -130,6 +130,14 @@ const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш се�
 
 const ENCRYPTION_KEY = '5f4dcc3b5aa765d61d8327deb882cf99'; // Замініть на ваш ключ шифрування
 
+function aesEncrypt(data, key) {
+    const iv = Buffer.alloc(16, 0); // Ініціалізаційний вектор (IV)
+    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key), iv);
+    let encrypted = cipher.update(data, 'utf8', 'binary');
+    encrypted += cipher.final('binary');
+    return Buffer.from(encrypted, 'binary');
+}
+
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
@@ -148,11 +156,9 @@ app.post('/api/login', async (req, res) => {
 
         const user = results[0];
         try {
-            const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
-            let encrypted = cipher.update(password, 'utf8', 'binary');
-            encrypted += cipher.final('binary');
+            const encryptedPassword = aesEncrypt(password, ENCRYPTION_KEY);
 
-            if (Buffer.from(encrypted, 'binary').equals(user.password)) {
+            if (Buffer.compare(encryptedPassword, user.password) === 0) {
                 try {
                     console.log('Generating JWT token...');
                     const payload = { id: user.id, login: user.login };
@@ -165,7 +171,7 @@ app.post('/api/login', async (req, res) => {
                     res.status(500).send(`Error generating JWT token ${jwtError}`);
                 }
             } else {
-                res.status(401).send(`Invalid credentials ${encrypted}      ${user.password}`);
+                res.status(401).send('Invalid credentials');
             }
         } catch (err) {
             console.error('Error during login:', err);
@@ -173,6 +179,5 @@ app.post('/api/login', async (req, res) => {
         }
     });
 });
-
 
 export default app;
