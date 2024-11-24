@@ -128,7 +128,7 @@ app.post('/api/login', async (req, res) => {
     pool.query(query, [login], async (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
+            res.status(501).send('Error fetching data');
             return;
         }
 
@@ -138,7 +138,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
-        // Пряме порівняння паролів без хешування
+
         if (password === user.password) {
             const key = await jose.JWK.asKey(process.env.JWT_SECRET, 'pem');
             const payload = { id: user.id, login: user.login };
