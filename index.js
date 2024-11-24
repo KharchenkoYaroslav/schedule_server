@@ -146,11 +146,11 @@ app.post('/api/login', async (req, res) => {
 
         const user = results[0];
         try {
-            const cipher = crypto.createCipher('aes-256-cbc', process.env.SECRET_KEY);
+            const cipher = crypto.createCipher('aes-256-cbc', '5f4dcc3b5aa765d61d8327deb882cf99');
             let encrypted = cipher.update(password, 'utf8', 'hex');
             encrypted += cipher.final('hex');
         } catch (err) {
-            res.status(500).send(err);
+            res.status(505).send(err);
         }
 
         //const decryptedPassword = decrypt(user.password);
