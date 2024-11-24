@@ -1,7 +1,7 @@
 import express from 'express';
 import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
-import { encrypt, decrypt } from './encryption.js';
+import { encrypt } from './encryption.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
@@ -146,16 +146,16 @@ app.post('/api/login', async (req, res) => {
 
         const user = results[0];
         try {
-            const decipher = crypto.createDecipher('aes-256-cbc', '5f4dcc3b5aa765d61d8327deb882cf99');
-            let decrypted = decipher.update(user.password, 'binary', 'utf8');
-            decrypted += decipher.final('utf8');
+            const cipher = crypto.createCipher('aes-256-cbc', process.env.SECRET_KEY);
+            let encrypted = cipher.update(password, 'utf8', 'hex');
+            encrypted += cipher.final('hex');
         } catch (err) {
             res.status(500).send(err);
         }
 
         //const decryptedPassword = decrypt(user.password);
 
-        if (password === user.password) {
+        if (encrypted === user.password) {
             try {
                 console.log('Generating JWT token...');
                 const payload = { id: user.id, login: user.login };
@@ -168,7 +168,7 @@ app.post('/api/login', async (req, res) => {
                 res.status(500).send(`Error generating JWT token ${jwtError}`);
             }
         } else {
-            res.status(401).send(`Invalid credentials. ${password} ${decrypted}`);
+            res.status(401).send(`Invalid credentials. ${encrypted} ${user.password}`);
         }
     });
 });
