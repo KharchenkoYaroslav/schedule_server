@@ -1,7 +1,7 @@
 import express from 'express';
 import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs'; // Використовуйте bcryptjs
+import { decrypt } from './encryption.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -125,8 +125,6 @@ app.get('/api/getTeacher', (req, res) => {
     });
 });
 
-const JWT_SECRET = 'your_secret_key_here'; // Замініть на ваш секретний ключ
-
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
@@ -144,13 +142,13 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = results[0];
-        //const passwordMatch = await bcrypt.compare(password, user.password); я спеціально покищо не Використовую це
+        const decryptedPassword = decrypt(user.password);
 
-        if (password === user.password) {
+        if (password === decryptedPassword) {
             try {
                 console.log('Generating JWT token...');
                 const payload = { id: user.id, login: user.login };
-                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+                const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
                 console.log('Token generated:', token);
 
                 res.json({ token });
@@ -159,7 +157,7 @@ app.post('/api/login', async (req, res) => {
                 res.status(500).send(`Error generating JWT token ${jwtError}`);
             }
         } else {
-            res.status(401).send(`Invalid credentials. Input password: ${password}, Stored password: ${user.password}`);
+            res.status(401).send('Invalid credentials');
         }
     });
 });
