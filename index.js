@@ -16,6 +16,7 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
 app.get('/api/combinedList', (req, res) => {
