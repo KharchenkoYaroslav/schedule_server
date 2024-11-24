@@ -1,6 +1,7 @@
 import express from 'express';
 import mysql from 'mysql2';
 import jose from 'node-jose';
+import bcrypt from 'bcryptjs'; // Використовуйте bcryptjs
 
 const app = express();
 app.use(express.json());
