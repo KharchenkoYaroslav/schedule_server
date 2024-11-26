@@ -182,6 +182,7 @@ app.post('/api/getAdminName', async (req, res) => {
         }
 
         if (results.length === 0) {
+            console.error('Адміністратор не знайдений:', login);
             res.status(404).send('Адміністратор не знайдений');
             return;
         }
