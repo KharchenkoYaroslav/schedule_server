@@ -1,14 +1,15 @@
 import express from 'express';
 import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
-//import { encrypt } from './encryption.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import cors from 'cors'; // Імпортуємо пакет cors
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cors()); // Додаємо middleware для CORS
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -125,7 +126,6 @@ app.get('/api/getTeacher', (req, res) => {
         res.json(result);
     });
 });
-
 
 const JWT_SECRET = process.env.SECRET; 
 
