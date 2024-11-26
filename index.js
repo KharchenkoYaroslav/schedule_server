@@ -170,4 +170,25 @@ app.post('/api/login', async (req, res) => {
     });
 });
 
+app.post('/api/getAdminName', async (req, res) => {
+    const { login } = req.body;
+
+    const query = 'SELECT full_name FROM admin_list_TB WHERE login = ?';
+    pool.query(query, [login], (err, results) => {
+        if (err) {
+            console.error('Помилка виконання запиту:', err);
+            res.status(500).send('Помилка отримання даних');
+            return;
+        }
+
+        if (results.length === 0) {
+            res.status(404).send('Адміністратор не знайдений');
+            return;
+        }
+
+        const adminName = results[0].full_name;
+        res.json({ full_name: adminName });
+    });
+});
+
 export default app;
