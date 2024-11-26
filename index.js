@@ -173,7 +173,7 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/getAdminName', async (req, res) => {
     const { login } = req.body;
 
-    const query = 'SELECT full_name FROM admin_list_TB WHERE login = ?';
+    const query = 'SELECT login FROM admin_list_TB WHERE login = ?';
     pool.query(query, [login], (err, results) => {
         if (err) {
             console.error('Помилка виконання запиту:', err);
@@ -187,7 +187,7 @@ app.post('/api/getAdminName', async (req, res) => {
             return;
         }
 
-        const adminName = results[0].full_name;
+        const adminName = results[0].login;
         res.json({ full_name: adminName });
     });
 });
