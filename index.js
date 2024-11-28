@@ -205,15 +205,29 @@ app.get('/api/groups', (req, res) => {
 });
 
 app.post('/api/groups', (req, res) => {
-    const { group_code } = req.body;
-    const query = 'INSERT INTO groups_TB (group_code) VALUES (?)';
-    pool.query(query, [group_code], (err, result) => {
+    const { group_code, specialty_id, number_of_students } = req.body;
+    const query = 'INSERT INTO groups_TB (group_code, specialty_id, number_of_students) VALUES (?, ?, ?)';
+    pool.query(query, [group_code, specialty_id, number_of_students], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error adding group');
             return;
         }
         res.status(201).send('Group added successfully');
+    });
+});
+
+app.put('/api/groups/:groupCode', (req, res) => {
+    const { groupCode } = req.params;
+    const { specialty_id, number_of_students } = req.body;
+    const query = 'UPDATE groups_TB SET specialty_id = ?, number_of_students = ? WHERE group_code = ?';
+    pool.query(query, [specialty_id, number_of_students, groupCode], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating group');
+            return;
+        }
+        res.status(200).send('Group updated successfully');
     });
 });
 
@@ -243,9 +257,9 @@ app.get('/api/teachers', (req, res) => {
 });
 
 app.post('/api/teachers', (req, res) => {
-    const { full_name } = req.body;
-    const query = 'INSERT INTO teachers_TB (full_name) VALUES (?)';
-    pool.query(query, [full_name], (err, result) => {
+    const { full_name, department, post } = req.body;
+    const query = 'INSERT INTO teachers_TB (full_name, department, post) VALUES (?, ?, ?)';
+    pool.query(query, [full_name, department, post], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error adding teacher');
@@ -255,10 +269,24 @@ app.post('/api/teachers', (req, res) => {
     });
 });
 
-app.delete('/api/teachers/:teacherName', (req, res) => {
-    const { teacherName } = req.params;
-    const query = 'DELETE FROM teachers_TB WHERE full_name = ?';
-    pool.query(query, [teacherName], (err, result) => {
+app.put('/api/teachers/:teacherId', (req, res) => {
+    const { teacherId } = req.params;
+    const { full_name, department, post } = req.body;
+    const query = 'UPDATE teachers_TB SET full_name = ?, department = ?, post = ? WHERE id = ?';
+    pool.query(query, [full_name, department, post, teacherId], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating teacher');
+            return;
+        }
+        res.status(200).send('Teacher updated successfully');
+    });
+});
+
+app.delete('/api/teachers/:teacherId', (req, res) => {
+    const { teacherId } = req.params;
+    const query = 'DELETE FROM teachers_TB WHERE id = ?';
+    pool.query(query, [teacherId], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error deleting teacher');
