@@ -296,4 +296,16 @@ app.delete('/api/teachers/:teacherId', (req, res) => {
     });
 });
 
+app.get('/api/specialties', (req, res) => {
+    const query = 'SELECT * FROM specialty_TB';
+    pool.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching specialties data');
+            return;
+        }
+        res.json(results);
+    });
+});
+
 export default app;
