@@ -3,13 +3,13 @@ import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import cors from 'cors'; // Імпортуємо пакет cors
+import cors from 'cors'; 
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors()); // Додаємо middleware для CORS
+app.use(cors()); 
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -189,6 +189,82 @@ app.post('/api/getAdminName', async (req, res) => {
 
         const adminName = results[0].login;
         res.json({ full_name: adminName });
+    });
+});
+
+app.get('/api/groups', (req, res) => {
+    const query = 'SELECT * FROM groups_TB';
+    pool.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching groups data');
+            return;
+        }
+        res.json(results);
+    });
+});
+
+app.post('/api/groups', (req, res) => {
+    const { group_code } = req.body;
+    const query = 'INSERT INTO groups_TB (group_code) VALUES (?)';
+    pool.query(query, [group_code], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding group');
+            return;
+        }
+        res.status(201).send('Group added successfully');
+    });
+});
+
+app.delete('/api/groups/:groupCode', (req, res) => {
+    const { groupCode } = req.params;
+    const query = 'DELETE FROM groups_TB WHERE group_code = ?';
+    pool.query(query, [groupCode], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting group');
+            return;
+        }
+        res.status(200).send('Group deleted successfully');
+    });
+});
+
+app.get('/api/teachers', (req, res) => {
+    const query = 'SELECT * FROM teachers_TB';
+    pool.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching teachers data');
+            return;
+        }
+        res.json(results);
+    });
+});
+
+app.post('/api/teachers', (req, res) => {
+    const { full_name } = req.body;
+    const query = 'INSERT INTO teachers_TB (full_name) VALUES (?)';
+    pool.query(query, [full_name], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding teacher');
+            return;
+        }
+        res.status(201).send('Teacher added successfully');
+    });
+});
+
+app.delete('/api/teachers/:teacherName', (req, res) => {
+    const { teacherName } = req.params;
+    const query = 'DELETE FROM teachers_TB WHERE full_name = ?';
+    pool.query(query, [teacherName], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting teacher');
+            return;
+        }
+        res.status(200).send('Teacher deleted successfully');
     });
 });
 
