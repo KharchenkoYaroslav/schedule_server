@@ -308,4 +308,56 @@ app.get('/api/specialties', (req, res) => {
     });
 });
 
+app.get('/api/curriculums', (req, res) => {
+    const query = 'SELECT * FROM curriculum_TB';
+    pool.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching curriculums data');
+            return;
+        }
+        res.json(results);
+    });
+});
+
+app.post('/api/curriculums', (req, res) => {
+    const { subject_name, related_teachers, related_groups, correspondence } = req.body;
+    const query = 'INSERT INTO curriculum_TB (subject_name, related_teachers, related_groups, correspondence) VALUES (?, ?, ?, ?)';
+    pool.query(query, [subject_name, JSON.stringify(related_teachers), JSON.stringify(related_groups), correspondence], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding curriculum');
+            return;
+        }
+        res.status(201).send('Curriculum added successfully');
+    });
+});
+
+app.put('/api/curriculums/:curriculumId', (req, res) => {
+    const { curriculumId } = req.params;
+    const { subject_name, related_teachers, related_groups, correspondence } = req.body;
+    const query = 'UPDATE curriculum_TB SET subject_name = ?, related_teachers = ?, related_groups = ?, correspondence = ? WHERE id = ?';
+    pool.query(query, [subject_name, JSON.stringify(related_teachers), JSON.stringify(related_groups), correspondence, curriculumId], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating curriculum');
+            return;
+        }
+        res.status(200).send('Curriculum updated successfully');
+    });
+});
+
+app.delete('/api/curriculums/:curriculumId', (req, res) => {
+    const { curriculumId } = req.params;
+    const query = 'DELETE FROM curriculum_TB WHERE id = ?';
+    pool.query(query, [curriculumId], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting curriculum');
+            return;
+        }
+        res.status(200).send('Curriculum deleted successfully');
+    });
+});
+
 export default app;
