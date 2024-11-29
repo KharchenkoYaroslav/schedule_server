@@ -322,31 +322,72 @@ app.get('/api/curriculums', (req, res) => {
 
 app.post('/api/curriculums', (req, res) => {
     const { subject_name, related_teachers, related_groups, correspondence } = req.body;
-    const query = 'INSERT INTO curriculum_TB (subject_name, related_teachers, related_groups, correspondence) VALUES (?, ?, ?, ?)';
-    pool.query(query, [subject_name, JSON.stringify(related_teachers), JSON.stringify(related_groups), correspondence], (err, result) => {
+
+    // Отримуємо останній вставлений ID
+    const getLastInsertIdQuery = 'SELECT LAST_INSERT_ID() AS last_id';
+
+    // Вставляємо новий предмет
+    const insertSubjectQuery = 'INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)';
+    pool.query(insertSubjectQuery, [subject_name, correspondence], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error adding curriculum');
             return;
         }
-        res.status(201).send('Curriculum added successfully');
+
+        // Отримуємо останній вставлений ID
+        pool.query(getLastInsertIdQuery, (err, result) => {
+            if (err) {
+                console.error('Error executing query:', err);
+                res.status(500).send('Error getting last insert ID');
+                return;
+            }
+
+            const lastId = result[0].last_id;
+
+            // Ініціалізуємо вчителів
+            const teachersArray = related_teachers.map(teacher => initTeacher(lastId, teacher.name, teacher.planned_lectures, teacher.planned_practicals, teacher.planned_labs));
+
+            // Ініціалізуємо групи
+            const groupsArray = related_groups.map(group => initGroup(lastId, group.code, group.planned_lectures, group.planned_practicals, group.planned_labs));
+
+            // Оновлюємо предмет з ініціалізованими вчителями та групами
+            const updateCurriculumQuery = 'UPDATE curriculum_TB SET related_teachers = ?, related_groups = ? WHERE id = ?';
+            pool.query(updateCurriculumQuery, [JSON.stringify(teachersArray), JSON.stringify(groupsArray), lastId], (err, result) => {
+                if (err) {
+                    console.error('Error executing query:', err);
+                    res.status(500).send('Error updating curriculum');
+                    return;
+                }
+
+                res.status(201).send('Curriculum added successfully');
+            });
+        });
     });
 });
 
 app.put('/api/curriculums/:curriculumId', (req, res) => {
     const { curriculumId } = req.params;
     const { subject_name, related_teachers, related_groups, correspondence } = req.body;
-    const query = 'UPDATE curriculum_TB SET subject_name = ?, related_teachers = ?, related_groups = ?, correspondence = ? WHERE id = ?';
-    pool.query(query, [subject_name, JSON.stringify(related_teachers), JSON.stringify(related_groups), correspondence, curriculumId], (err, result) => {
+
+    // Ініціалізуємо вчителів
+    const teachersArray = related_teachers.map(teacher => initTeacher(curriculumId, teacher.name, teacher.planned_lectures, teacher.planned_practicals, teacher.planned_labs));
+
+    // Ініціалізуємо групи
+    const groupsArray = related_groups.map(group => initGroup(curriculumId, group.code, group.planned_lectures, group.planned_practicals, group.planned_labs));
+
+    // Оновлюємо предмет з ініціалізованими вчителями та групами
+    const updateCurriculumQuery = 'UPDATE curriculum_TB SET subject_name = ?, related_teachers = ?, related_groups = ?, correspondence = ? WHERE id = ?';
+    pool.query(updateCurriculumQuery, [subject_name, JSON.stringify(teachersArray), JSON.stringify(groupsArray), correspondence, curriculumId], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error updating curriculum');
             return;
         }
+
         res.status(200).send('Curriculum updated successfully');
     });
 });
-
 app.delete('/api/curriculums/:curriculumId', (req, res) => {
     const { curriculumId } = req.params;
     const query = 'DELETE FROM curriculum_TB WHERE id = ?';
