@@ -323,7 +323,6 @@ app.get('/api/curriculums', async (req, res) => {
 app.post('/api/curriculums', (req, res) => {
     const { subject_name, related_teachers, related_groups, correspondence } = req.body;
 
-    // Перший запит: вставка основного запису
     const query1 = 'INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)';
     pool.query(query1, [subject_name, correspondence], (err, result) => {
         if (err) {
@@ -334,11 +333,9 @@ app.post('/api/curriculums', (req, res) => {
 
         const lastId = result.insertId;
 
-        // Перетворення масивів в JSON-рядок
         const teachersArray = related_teachers.map(teacher => `initTeacher(${lastId}, ${teacher.id}, ${teacher.planned_lectures}, ${teacher.planned_practicals}, ${teacher.planned_labs})`).join(', ');
         const groupsArray = related_groups.map(group => `initGroup(${lastId}, '${group.code}', ${group.planned_lectures}, ${group.planned_practicals}, ${group.planned_labs})`).join(', ');
 
-        // Другий запит: оновлення запису з JSON-рядами
         const query2 = `UPDATE curriculum_TB SET related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}) WHERE id = ?`;
         pool.query(query2, [lastId], (err, result) => {
             if (err) {
