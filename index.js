@@ -3,15 +3,13 @@ import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-
-
-
+import cors from 'cors'; 
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-
+app.use(cors()); 
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -25,19 +23,35 @@ const pool = mysql.createPool({
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-app.get('/api/combinedList', async (req, res) => {
-    try {
-        const [groups] = await pool.query('SELECT group_code FROM groups_TB');
-        const [teachers] = await pool.query('SELECT full_name FROM teachers_TB');
+app.get('/api/combinedList', (req, res) => {
+    const queryGroups = 'SELECT group_code FROM groups_TB';
+    const queryTeachers = 'SELECT full_name FROM teachers_TB';
 
-        res.json({ groups, teachers });
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching data');
-    }
+    pool.query(queryGroups, (err, groups) => {
+        if (err) {
+            console.error('Error executing groups query:', err);
+            res.status(500).send('Error fetching groups data');
+            return;
+        }
+
+        pool.query(queryTeachers, (err, teachers) => {
+            if (err) {
+                console.error('Error executing teachers query:', err);
+                res.status(500).send('Error fetching teachers data');
+                return;
+            }
+
+            const data = {
+                groups: groups,
+                teachers: teachers
+            };
+
+            res.json(data);
+        });
+    });
 });
 
-app.get('/api/getGroup', async (req, res) => {
+app.get('/api/getGroup', (req, res) => {
     const groupName = `"${req.query.groupName}"`;
     const semester = req.query.semester;
     const sql = `
@@ -67,16 +81,18 @@ app.get('/api/getGroup', async (req, res) => {
         JSON_CONTAINS(s.groups_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    try {
-        const [result] = await pool.query(sql, [groupName, semester]);
+    pool.query(sql, [groupName, semester], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching data');
+            return;
+        }
+
         res.json(result);
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching data');
-    }
+    });
 });
 
-app.get('/api/getTeacher', async (req, res) => {
+app.get('/api/getTeacher', (req, res) => {
     const teacherName = `"${req.query.teacherName}"`;
     const semester = req.query.semester;
     const sql = `
@@ -100,16 +116,18 @@ app.get('/api/getTeacher', async (req, res) => {
         JSON_CONTAINS(s.teachers_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    try {
-        const [result] = await pool.query(sql, [teacherName, semester]);
+    pool.query(sql, [teacherName, semester], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching data');
+            return;
+        }
+
         res.json(result);
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching data');
-    }
+    });
 });
 
-const JWT_SECRET = process.env.SECRET;
+const JWT_SECRET = process.env.SECRET; 
 
 function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('hex');
@@ -118,8 +136,13 @@ function hashPassword(password) {
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
-    try {
-        const [results] = await pool.query('SELECT * FROM admin_list_TB WHERE login = ?', [login]);
+    const query = 'SELECT * FROM admin_list_TB WHERE login = ?';
+    pool.query(query, [login], async (err, results) => {
+        if (err) {
+            console.error('Помилка виконання запиту:', err);
+            res.status(500).send('Помилка отримання даних');
+            return;
+        }
 
         if (results.length === 0) {
             res.status(401).send('Невірні данні');
@@ -130,35 +153,55 @@ app.post('/api/login', async (req, res) => {
         const passwordHash = hashPassword(password);
 
         if (passwordHash === user.password_hash) {
-            const payload = { id: user.id, login: user.login };
-            const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-            res.json({ token });
+            try {
+                console.log('Генерація JWT токена...');
+                const payload = { id: user.id, login: user.login };
+                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+                console.log('Токен згенеровано:', token);
+
+                res.json({ token });
+            } catch (jwtError) {
+                console.error('Помилка генерації JWT токена:', jwtError);
+                res.status(500).send(`Помилка генерації JWT токена ${jwtError}`);
+            }
         } else {
             res.status(401).send('Невірні данні');
         }
-    } catch (err) {
-        console.error('Помилка виконання запиту:', err);
-        res.status(500).send('Помилка отримання даних');
-    }
+    });
 });
 
 app.post('/api/getAdminName', async (req, res) => {
     const { login } = req.body;
 
-    try {
-        const [results] = await pool.query('SELECT login FROM admin_list_TB WHERE login = ?', [login]);
+    const query = 'SELECT login FROM admin_list_TB WHERE login = ?';
+    pool.query(query, [login], (err, results) => {
+        if (err) {
+            console.error('Помилка виконання запиту:', err);
+            res.status(500).send('Помилка отримання даних');
+            return;
+        }
 
         if (results.length === 0) {
+            console.error('Адміністратор не знайдений:', login);
             res.status(404).send('Адміністратор не знайдений');
             return;
         }
 
         const adminName = results[0].login;
         res.json({ full_name: adminName });
-    } catch (err) {
-        console.error('Помилка виконання запиту:', err);
-        res.status(500).send('Помилка отримання даних');
-    }
+    });
+});
+
+app.get('/api/groups', (req, res) => {
+    const query = 'SELECT * FROM groups_TB';
+    pool.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching groups data');
+            return;
+        }
+        res.json(results);
+    });
 });
 
 app.post('/api/groups', (req, res) => {
@@ -201,66 +244,68 @@ app.delete('/api/groups/:groupCode', (req, res) => {
     });
 });
 
-app.get('/api/teachers', async (req, res) => {
-    try {
-        const [results] = await pool.query('SELECT * FROM teachers_TB');
-        res.json(results);
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching teachers data');
-    }
-});
-
-app.post('/api/teachers', async (req, res) => {
-    const { full_name, department, post } = req.body;
-
-    try {
-        await pool.query('INSERT INTO teachers_TB (full_name, department, post) VALUES (?, ?, ?)', [full_name, department, post]);
-        res.status(201).send('Teacher added successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error adding teacher');
-    }
-});
-
-app.put('/api/teachers/:teacherId', async (req, res) => {
-    const { teacherId } = req.params;
-    const { full_name, department, post } = req.body;
-
-    try {
-        await pool.query('UPDATE teachers_TB SET full_name = ?, department = ?, post = ? WHERE id = ?', [full_name, department, post, teacherId]);
-        res.status(200).send('Teacher updated successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error updating teacher');
-    }
-});
-
-app.delete('/api/teachers/:teacherId', async (req, res) => {
-    const { teacherId } = req.params;
-
-    try {
-        const [result] = await pool.query('DELETE FROM teachers_TB WHERE id = ?', [teacherId]);
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).send('Teacher not found');
+app.get('/api/teachers', (req, res) => {
+    const query = 'SELECT * FROM teachers_TB';
+    pool.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching teachers data');
+            return;
         }
-
-        res.status(200).send('Teacher deleted successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error deleting teacher');
-    }
+        res.json(results);
+    });
 });
 
-app.get('/api/specialties', async (req, res) => {
-    try {
-        const [results] = await pool.query('SELECT * FROM specialty_TB');
+app.post('/api/teachers', (req, res) => {
+    const { full_name, department, post } = req.body;
+    const query = 'INSERT INTO teachers_TB (full_name, department, post) VALUES (?, ?, ?)';
+    pool.query(query, [full_name, department, post], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding teacher');
+            return;
+        }
+        res.status(201).send('Teacher added successfully');
+    });
+});
+
+app.put('/api/teachers/:teacherId', (req, res) => {
+    const { teacherId } = req.params;
+    const { full_name, department, post } = req.body;
+    const query = 'UPDATE teachers_TB SET full_name = ?, department = ?, post = ? WHERE id = ?';
+    pool.query(query, [full_name, department, post, teacherId], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating teacher');
+            return;
+        }
+        res.status(200).send('Teacher updated successfully');
+    });
+});
+
+app.delete('/api/teachers/:teacherId', (req, res) => {
+    const { teacherId } = req.params;
+    const query = 'DELETE FROM teachers_TB WHERE id = ?';
+    pool.query(query, [teacherId], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting teacher');
+            return;
+        }
+        res.status(200).send('Teacher deleted successfully');
+    });
+});
+
+app.get('/api/specialties', (req, res) => {
+    const query = 'SELECT * FROM specialty_TB';
+    pool.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching specialties data');
+            return;
+        }
         res.json(results);
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching specialties data');
-    }
+    });
 });
 
 app.get('/api/curriculums', async (req, res) => {
