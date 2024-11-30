@@ -3,12 +3,14 @@ import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import cors from 'cors';
 
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 
 const pool = mysql.createPool({
@@ -313,11 +315,8 @@ app.delete('/api/curriculums/:curriculumId', async (req, res) => {
     const { curriculumId } = req.params;
 
     try {
-        const [result] = await pool.query('DELETE FROM curriculum_TB WHERE id = ?', [curriculumId]);
-        if (result.affectedRows === 0) {
-            return res.status(404).send('Предмет не знайдено');
-        }
-        res.status(200).send('Предмет видалений успішно');
+        await pool.query('DELETE FROM curriculum_TB WHERE id = ?', [curriculumId]);
+        res.status(200).send('Curriculum deleted successfully');
     } catch (err) {
         console.error('Error executing query:', err);
         res.status(500).send('Error deleting curriculum');
