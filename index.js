@@ -368,7 +368,7 @@ app.post('/api/curriculums', (req, res) => {
 
 app.put('/api/curriculums/:curriculumId', (req, res) => {
     const { curriculumId } = req.params;
-    const { subject_name, related_teachers, related_groups, correspondence } = req.body;
+    const { subject_name, related_teachers, related_groups } = req.body;
 
     // Ініціалізуємо вчителів
     const teachersArray = related_teachers.map(teacher => initTeacher(curriculumId, teacher.name, teacher.planned_lectures, teacher.planned_practicals, teacher.planned_labs));
@@ -377,8 +377,8 @@ app.put('/api/curriculums/:curriculumId', (req, res) => {
     const groupsArray = related_groups.map(group => initGroup(curriculumId, group.code, group.planned_lectures, group.planned_practicals, group.planned_labs));
 
     // Оновлюємо предмет з ініціалізованими вчителями та групами
-    const updateCurriculumQuery = 'UPDATE curriculum_TB SET subject_name = ?, related_teachers = ?, related_groups = ?, correspondence = ? WHERE id = ?';
-    pool.query(updateCurriculumQuery, [subject_name, JSON.stringify(teachersArray), JSON.stringify(groupsArray), correspondence, curriculumId], (err, result) => {
+    const updateCurriculumQuery = 'UPDATE curriculum_TB SET subject_name = ?, related_teachers = ?, related_groups = ? WHERE id = ?';
+    pool.query(updateCurriculumQuery, [subject_name, JSON.stringify(teachersArray), JSON.stringify(groupsArray), curriculumId], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error updating curriculum');
@@ -388,6 +388,7 @@ app.put('/api/curriculums/:curriculumId', (req, res) => {
         res.status(200).send('Curriculum updated successfully');
     });
 });
+
 app.delete('/api/curriculums/:curriculumId', (req, res) => {
     const { curriculumId } = req.params;
     const query = 'DELETE FROM curriculum_TB WHERE id = ?';
