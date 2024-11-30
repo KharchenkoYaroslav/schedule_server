@@ -1,15 +1,28 @@
 import express from 'express';
-import mysql from 'mysql2';
+import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import cors from 'cors'; 
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import morgan from 'morgan';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors()); 
+app.use(cors());
+app.use(helmet());
+app.use(compression());
+app.use(morgan('combined'));
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 хвилин
+    max: 100 // обмеження на 100 запитів за 15 хвилин
+});
+app.use(limiter);
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -23,35 +36,19 @@ const pool = mysql.createPool({
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-app.get('/api/combinedList', (req, res) => {
-    const queryGroups = 'SELECT group_code FROM groups_TB';
-    const queryTeachers = 'SELECT full_name FROM teachers_TB';
+app.get('/api/combinedList', async (req, res) => {
+    try {
+        const [groups] = await pool.query('SELECT group_code FROM groups_TB');
+        const [teachers] = await pool.query('SELECT full_name FROM teachers_TB');
 
-    pool.query(queryGroups, (err, groups) => {
-        if (err) {
-            console.error('Error executing groups query:', err);
-            res.status(500).send('Error fetching groups data');
-            return;
-        }
-
-        pool.query(queryTeachers, (err, teachers) => {
-            if (err) {
-                console.error('Error executing teachers query:', err);
-                res.status(500).send('Error fetching teachers data');
-                return;
-            }
-
-            const data = {
-                groups: groups,
-                teachers: teachers
-            };
-
-            res.json(data);
-        });
-    });
+        res.json({ groups, teachers });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching data');
+    }
 });
 
-app.get('/api/getGroup', (req, res) => {
+app.get('/api/getGroup', async (req, res) => {
     const groupName = `"${req.query.groupName}"`;
     const semester = req.query.semester;
     const sql = `
@@ -81,18 +78,16 @@ app.get('/api/getGroup', (req, res) => {
         JSON_CONTAINS(s.groups_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    pool.query(sql, [groupName, semester], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
-            return;
-        }
-
+    try {
+        const [result] = await pool.query(sql, [groupName, semester]);
         res.json(result);
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching data');
+    }
 });
 
-app.get('/api/getTeacher', (req, res) => {
+app.get('/api/getTeacher', async (req, res) => {
     const teacherName = `"${req.query.teacherName}"`;
     const semester = req.query.semester;
     const sql = `
@@ -116,18 +111,16 @@ app.get('/api/getTeacher', (req, res) => {
         JSON_CONTAINS(s.teachers_list, ?, "$") 
         AND s.semester_number = ?;
   `;
-    pool.query(sql, [teacherName, semester], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching data');
-            return;
-        }
-
+    try {
+        const [result] = await pool.query(sql, [teacherName, semester]);
         res.json(result);
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching data');
+    }
 });
 
-const JWT_SECRET = process.env.SECRET; 
+const JWT_SECRET = process.env.SECRET;
 
 function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('hex');
@@ -136,13 +129,8 @@ function hashPassword(password) {
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
-    const query = 'SELECT * FROM admin_list_TB WHERE login = ?';
-    pool.query(query, [login], async (err, results) => {
-        if (err) {
-            console.error('Помилка виконання запиту:', err);
-            res.status(500).send('Помилка отримання даних');
-            return;
-        }
+    try {
+        const [results] = await pool.query('SELECT * FROM admin_list_TB WHERE login = ?', [login]);
 
         if (results.length === 0) {
             res.status(401).send('Невірні данні');
@@ -153,253 +141,217 @@ app.post('/api/login', async (req, res) => {
         const passwordHash = hashPassword(password);
 
         if (passwordHash === user.password_hash) {
-            try {
-                console.log('Генерація JWT токена...');
-                const payload = { id: user.id, login: user.login };
-                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-                console.log('Токен згенеровано:', token);
-
-                res.json({ token });
-            } catch (jwtError) {
-                console.error('Помилка генерації JWT токена:', jwtError);
-                res.status(500).send(`Помилка генерації JWT токена ${jwtError}`);
-            }
+            const payload = { id: user.id, login: user.login };
+            const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+            res.json({ token });
         } else {
             res.status(401).send('Невірні данні');
         }
-    });
+    } catch (err) {
+        console.error('Помилка виконання запиту:', err);
+        res.status(500).send('Помилка отримання даних');
+    }
 });
 
 app.post('/api/getAdminName', async (req, res) => {
     const { login } = req.body;
 
-    const query = 'SELECT login FROM admin_list_TB WHERE login = ?';
-    pool.query(query, [login], (err, results) => {
-        if (err) {
-            console.error('Помилка виконання запиту:', err);
-            res.status(500).send('Помилка отримання даних');
-            return;
-        }
+    try {
+        const [results] = await pool.query('SELECT login FROM admin_list_TB WHERE login = ?', [login]);
 
         if (results.length === 0) {
-            console.error('Адміністратор не знайдений:', login);
             res.status(404).send('Адміністратор не знайдений');
             return;
         }
 
         const adminName = results[0].login;
         res.json({ full_name: adminName });
-    });
+    } catch (err) {
+        console.error('Помилка виконання запиту:', err);
+        res.status(500).send('Помилка отримання даних');
+    }
 });
 
-app.get('/api/groups', (req, res) => {
-    const query = 'SELECT * FROM groups_TB';
-    pool.query(query, (err, results) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching groups data');
-            return;
-        }
+app.get('/api/groups', async (req, res) => {
+    try {
+        const [results] = await pool.query('SELECT * FROM groups_TB');
         res.json(results);
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching groups data');
+    }
 });
 
-app.post('/api/groups', (req, res) => {
+app.post('/api/groups', async (req, res) => {
     const { group_code, specialty_id, number_of_students } = req.body;
-    const query = 'INSERT INTO groups_TB (group_code, specialty_id, number_of_students) VALUES (?, ?, ?)';
-    pool.query(query, [group_code, specialty_id, number_of_students], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error adding group');
-            return;
-        }
+
+    try {
+        await pool.query('INSERT INTO groups_TB (group_code, specialty_id, number_of_students) VALUES (?, ?, ?)', [group_code, specialty_id, number_of_students]);
         res.status(201).send('Group added successfully');
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error adding group');
+    }
 });
 
-app.put('/api/groups/:groupCode', (req, res) => {
+app.put('/api/groups/:groupCode', async (req, res) => {
     const { groupCode } = req.params;
     const { specialty_id, number_of_students } = req.body;
-    const query = 'UPDATE groups_TB SET specialty_id = ?, number_of_students = ? WHERE group_code = ?';
-    pool.query(query, [specialty_id, number_of_students, groupCode], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error updating group');
-            return;
-        }
+
+    try {
+        await pool.query('UPDATE groups_TB SET specialty_id = ?, number_of_students = ? WHERE group_code = ?', [specialty_id, number_of_students, groupCode]);
         res.status(200).send('Group updated successfully');
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error updating group');
+    }
 });
 
-app.delete('/api/groups/:groupCode', (req, res) => {
+app.delete('/api/groups/:groupCode', async (req, res) => {
     const { groupCode } = req.params;
-    const query = 'DELETE FROM groups_TB WHERE group_code = ?';
-    pool.query(query, [groupCode], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error deleting group');
-            return;
-        }
+
+    try {
+        await pool.query('DELETE FROM groups_TB WHERE group_code = ?', [groupCode]);
         res.status(200).send('Group deleted successfully');
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error deleting group');
+    }
 });
 
-app.get('/api/teachers', (req, res) => {
-    const query = 'SELECT * FROM teachers_TB';
-    pool.query(query, (err, results) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching teachers data');
-            return;
-        }
+app.get('/api/teachers', async (req, res) => {
+    try {
+        const [results] = await pool.query('SELECT * FROM teachers_TB');
         res.json(results);
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching teachers data');
+    }
 });
 
-app.post('/api/teachers', (req, res) => {
+app.post('/api/teachers', async (req, res) => {
     const { full_name, department, post } = req.body;
-    const query = 'INSERT INTO teachers_TB (full_name, department, post) VALUES (?, ?, ?)';
-    pool.query(query, [full_name, department, post], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error adding teacher');
-            return;
-        }
+
+    try {
+        await pool.query('INSERT INTO teachers_TB (full_name, department, post) VALUES (?, ?, ?)', [full_name, department, post]);
         res.status(201).send('Teacher added successfully');
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error adding teacher');
+    }
 });
 
-app.put('/api/teachers/:teacherId', (req, res) => {
+app.put('/api/teachers/:teacherId', async (req, res) => {
     const { teacherId } = req.params;
     const { full_name, department, post } = req.body;
-    const query = 'UPDATE teachers_TB SET full_name = ?, department = ?, post = ? WHERE id = ?';
-    pool.query(query, [full_name, department, post, teacherId], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error updating teacher');
-            return;
-        }
+
+    try {
+        await pool.query('UPDATE teachers_TB SET full_name = ?, department = ?, post = ? WHERE id = ?', [full_name, department, post, teacherId]);
         res.status(200).send('Teacher updated successfully');
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error updating teacher');
+    }
 });
 
-app.delete('/api/teachers/:teacherId', (req, res) => {
+app.delete('/api/teachers/:teacherId', async (req, res) => {
     const { teacherId } = req.params;
-    const query = 'DELETE FROM teachers_TB WHERE id = ?';
-    pool.query(query, [teacherId], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error deleting teacher');
-            return;
-        }
+
+    try {
+        await pool.query('DELETE FROM teachers_TB WHERE id = ?', [teacherId]);
         res.status(200).send('Teacher deleted successfully');
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error deleting teacher');
+    }
 });
 
-app.get('/api/specialties', (req, res) => {
-    const query = 'SELECT * FROM specialty_TB';
-    pool.query(query, (err, results) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching specialties data');
-            return;
-        }
+app.get('/api/specialties', async (req, res) => {
+    try {
+        const [results] = await pool.query('SELECT * FROM specialty_TB');
         res.json(results);
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching specialties data');
+    }
 });
 
-app.get('/api/curriculums', (req, res) => {
-    const query = 'SELECT * FROM curriculum_TB';
-    pool.query(query, (err, results) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error fetching curriculums data');
-            return;
-        }
+app.get('/api/curriculums', async (req, res) => {
+    try {
+        const [results] = await pool.query('SELECT * FROM curriculum_TB');
         res.json(results);
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error fetching curriculums data');
+    }
 });
 
-app.post('/api/curriculums', (req, res) => {
+app.post('/api/curriculums', async (req, res) => {
     const { subject_name, related_teachers, related_groups, correspondence } = req.body;
 
-    // Отримуємо останній вставлений ID
-    const getLastInsertIdQuery = 'SELECT LAST_INSERT_ID() AS last_id';
+    try {
+        const [result] = await pool.query('INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)', [subject_name, correspondence]);
+        const lastId = result.insertId;
 
-    // Вставляємо новий предмет
-    const insertSubjectQuery = 'INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)';
-    pool.query(insertSubjectQuery, [subject_name, correspondence], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error adding curriculum');
-            return;
-        }
+        const teachersArray = related_teachers.map(teacher => initTeacher(lastId, teacher.id, teacher.planned_lectures, teacher.planned_practicals, teacher.planned_labs));
+        const groupsArray = related_groups.map(group => initGroup(lastId, group.code, group.planned_lectures, group.planned_practicals, group.planned_labs));
 
-        // Отримуємо останній вставлений ID
-        pool.query(getLastInsertIdQuery, (err, result) => {
-            if (err) {
-                console.error('Error executing query:', err);
-                res.status(500).send('Error getting last insert ID');
-                return;
-            }
+        await pool.query('UPDATE curriculum_TB SET related_teachers = ?, related_groups = ? WHERE id = ?', [JSON.stringify(teachersArray), JSON.stringify(groupsArray), lastId]);
 
-            const lastId = result[0].last_id;
-
-            // Ініціалізуємо вчителів
-            const teachersArray = related_teachers.map(teacher => initTeacher(lastId, teacher.name, teacher.planned_lectures, teacher.planned_practicals, teacher.planned_labs));
-
-            // Ініціалізуємо групи
-            const groupsArray = related_groups.map(group => initGroup(lastId, group.code, group.planned_lectures, group.planned_practicals, group.planned_labs));
-
-            // Оновлюємо предмет з ініціалізованими вчителями та групами
-            const updateCurriculumQuery = 'UPDATE curriculum_TB SET related_teachers = ?, related_groups = ? WHERE id = ?';
-            pool.query(updateCurriculumQuery, [JSON.stringify(teachersArray), JSON.stringify(groupsArray), lastId], (err, result) => {
-                if (err) {
-                    console.error('Error executing query:', err);
-                    res.status(500).send('Error updating curriculum');
-                    return;
-                }
-
-                res.status(201).send('Curriculum added successfully');
-            });
-        });
-    });
+        res.status(201).send('Curriculum added successfully');
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error adding curriculum');
+    }
 });
 
-app.put('/api/curriculums/:curriculumId', (req, res) => {
+app.put('/api/curriculums/:curriculumId', async (req, res) => {
     const { curriculumId } = req.params;
-    const { subject_name, related_teachers, related_groups } = req.body;
+    const { subject_name, related_teachers, related_groups, correspondence } = req.body;
 
-    // Ініціалізуємо вчителів
-    const teachersArray = related_teachers.map(teacher => initTeacher(curriculumId, teacher.name, teacher.planned_lectures, teacher.planned_practicals, teacher.planned_labs));
+    try {
+        const teachersArray = related_teachers.map(teacher => initTeacher(curriculumId, teacher.id, teacher.planned_lectures, teacher.planned_practicals, teacher.planned_labs));
+        const groupsArray = related_groups.map(group => initGroup(curriculumId, group.code, group.planned_lectures, group.planned_practicals, group.planned_labs));
 
-    // Ініціалізуємо групи
-    const groupsArray = related_groups.map(group => initGroup(curriculumId, group.code, group.planned_lectures, group.planned_practicals, group.planned_labs));
-
-    // Оновлюємо предмет з ініціалізованими вчителями та групами
-    const updateCurriculumQuery = 'UPDATE curriculum_TB SET subject_name = ?, related_teachers = ?, related_groups = ? WHERE id = ?';
-    pool.query(updateCurriculumQuery, [subject_name, JSON.stringify(teachersArray), JSON.stringify(groupsArray), curriculumId], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error updating curriculum');
-            return;
-        }
+        await pool.query('UPDATE curriculum_TB SET subject_name = ?, related_teachers = ?, related_groups = ?, correspondence = ? WHERE id = ?', [subject_name, JSON.stringify(teachersArray), JSON.stringify(groupsArray), correspondence, curriculumId]);
 
         res.status(200).send('Curriculum updated successfully');
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error updating curriculum');
+    }
 });
 
-app.delete('/api/curriculums/:curriculumId', (req, res) => {
+app.delete('/api/curriculums/:curriculumId', async (req, res) => {
     const { curriculumId } = req.params;
-    const query = 'DELETE FROM curriculum_TB WHERE id = ?';
-    pool.query(query, [curriculumId], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error deleting curriculum');
-            return;
-        }
+
+    try {
+        await pool.query('DELETE FROM curriculum_TB WHERE id = ?', [curriculumId]);
         res.status(200).send('Curriculum deleted successfully');
-    });
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).send('Error deleting curriculum');
+    }
 });
+
+function initTeacher(curriculumId, teacherId, planned_lectures, planned_practicals, planned_labs) {
+    return {
+        curriculum_id: curriculumId,
+        teacher_id: teacherId,
+        planned_lectures,
+        planned_practicals,
+        planned_labs
+    };
+}
+
+function initGroup(curriculumId, groupCode, planned_lectures, planned_practicals, planned_labs) {
+    return {
+        curriculum_id: curriculumId,
+        group_code: groupCode,
+        planned_lectures,
+        planned_practicals,
+        planned_labs
+    };
+}
 
 export default app;
