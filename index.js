@@ -203,7 +203,12 @@ app.delete('/api/groups/:groupCode', async (req, res) => {
     const { groupCode } = req.params;
 
     try {
-        await pool.query('DELETE FROM groups_TB WHERE group_code = ?', [groupCode]);
+        const [result] = await pool.query('DELETE FROM groups_TB WHERE group_code = ?', [groupCode]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).send('Group not found');
+        }
+
         res.status(200).send('Group deleted successfully');
     } catch (err) {
         console.error('Error executing query:', err);
@@ -250,7 +255,12 @@ app.delete('/api/teachers/:teacherId', async (req, res) => {
     const { teacherId } = req.params;
 
     try {
-        await pool.query('DELETE FROM teachers_TB WHERE id = ?', [teacherId]);
+        const [result] = await pool.query('DELETE FROM teachers_TB WHERE id = ?', [teacherId]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).send('Teacher not found');
+        }
+
         res.status(200).send('Teacher deleted successfully');
     } catch (err) {
         console.error('Error executing query:', err);
@@ -318,7 +328,12 @@ app.delete('/api/curriculums/:curriculumId', async (req, res) => {
     const { curriculumId } = req.params;
 
     try {
-        await pool.query('DELETE FROM curriculum_TB WHERE id = ?', [curriculumId]);
+        const [result] = await pool.query('DELETE FROM curriculum_TB WHERE id = ?', [curriculumId]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).send('Curriculum not found');
+        }
+
         res.status(200).send('Curriculum deleted successfully');
     } catch (err) {
         console.error('Error executing query:', err);
