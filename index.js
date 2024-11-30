@@ -309,13 +309,15 @@ app.get('/api/specialties', (req, res) => {
 });
 
 app.get('/api/curriculums', async (req, res) => {
-    try {
-        const [results] = await pool.query('SELECT * FROM curriculum_TB');
+    const query = 'SELECT * FROM curriculum_TB';
+    pool.query(query, (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching specialties data');
+            return;
+        }
         res.json(results);
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching curriculums data');
-    }
+    });
 });
 
 app.post('/api/curriculums', async (req, res) => {
