@@ -310,7 +310,7 @@ app.get('/api/specialties', (req, res) => {
 
 app.get('/api/curriculums', async (req, res) => {
     try {
-        const [results] = await pool.query('SELECT * FROM curriculum_TB');
+        const [results] = pool.query('SELECT * FROM curriculum_TB');
         res.json(results);
     } catch (err) {
         console.error('Error executing query:', err);
@@ -322,13 +322,13 @@ app.post('/api/curriculums', async (req, res) => {
     const { subject_name, related_teachers, related_groups, correspondence } = req.body;
 
     try {
-        const [result] = await pool.query('INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)', [subject_name, correspondence]);
+        const [result] = pool.query('INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)', [subject_name, correspondence]);
         const lastId = result.insertId;
 
         const teachersArray = related_teachers.map(teacher => `initTeacher(${lastId}, ${teacher.id}, ${teacher.planned_lectures}, ${teacher.planned_practicals}, ${teacher.planned_labs})`).join(', ');
         const groupsArray = related_groups.map(group => `initGroup(${lastId}, '${group.code}', ${group.planned_lectures}, ${group.planned_practicals}, ${group.planned_labs})`).join(', ');
 
-        await pool.query(`UPDATE curriculum_TB SET related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}) WHERE id = ?`, [lastId]);
+        pool.query(`UPDATE curriculum_TB SET related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}) WHERE id = ?`, [lastId]);
 
         res.status(201).send('Curriculum added successfully');
     } catch (err) {
@@ -345,7 +345,7 @@ app.put('/api/curriculums/:curriculumId', async (req, res) => {
         const teachersArray = related_teachers.map(teacher => `initTeacher(${curriculumId}, ${teacher.id}, ${teacher.planned_lectures}, ${teacher.planned_practicals}, ${teacher.planned_labs})`).join(', ');
         const groupsArray = related_groups.map(group => `initGroup(${curriculumId}, '${group.code}', ${group.planned_lectures}, ${group.planned_practicals}, ${group.planned_labs})`).join(', ');
 
-        await pool.query(`UPDATE curriculum_TB SET subject_name = ?, related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}), correspondence = ? WHERE id = ?`, [subject_name, correspondence, curriculumId]);
+        pool.query(`UPDATE curriculum_TB SET subject_name = ?, related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}), correspondence = ? WHERE id = ?`, [subject_name, correspondence, curriculumId]);
 
         res.status(200).send('Curriculum updated successfully');
     } catch (err) {
@@ -358,7 +358,7 @@ app.delete('/api/curriculums/:curriculumId', async (req, res) => {
     const { curriculumId } = req.params;
 
     try {
-        const [result] = await pool.query('DELETE FROM curriculum_TB WHERE id = ?', [curriculumId]);
+        const [result] = pool.query('DELETE FROM curriculum_TB WHERE id = ?', [curriculumId]);
         
         if (result.affectedRows === 0) {
             return res.status(404).send('Curriculum not found');
