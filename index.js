@@ -3,7 +3,7 @@ import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import cors from 'cors';
+
 
 
 
@@ -11,9 +11,6 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
-
-
 
 
 const pool = mysql.createPool({
