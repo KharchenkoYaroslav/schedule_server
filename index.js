@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import morgan from 'morgan';
 
@@ -18,11 +17,6 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('combined'));
 
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 хвилин
-    max: 100 // обмеження на 100 запитів за 15 хвилин
-});
-app.use(limiter);
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
