@@ -161,56 +161,44 @@ app.post('/api/getAdminName', async (req, res) => {
     }
 });
 
-app.get('/api/groups', async (req, res) => {
-    try {
-        const [results] = await pool.query('SELECT * FROM groups_TB');
-        res.json(results);
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error fetching groups data');
-    }
-});
-
-app.post('/api/groups', async (req, res) => {
+app.post('/api/groups', (req, res) => {
     const { group_code, specialty_id, number_of_students } = req.body;
-
-    try {
-        await pool.query('INSERT INTO groups_TB (group_code, specialty_id, number_of_students) VALUES (?, ?, ?)', [group_code, specialty_id, number_of_students]);
+    const query = 'INSERT INTO groups_TB (group_code, specialty_id, number_of_students) VALUES (?, ?, ?)';
+    pool.query(query, [group_code, specialty_id, number_of_students], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding group');
+            return;
+        }
         res.status(201).send('Group added successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error adding group');
-    }
+    });
 });
 
-app.put('/api/groups/:groupCode', async (req, res) => {
+app.put('/api/groups/:groupCode', (req, res) => {
     const { groupCode } = req.params;
     const { specialty_id, number_of_students } = req.body;
-
-    try {
-        await pool.query('UPDATE groups_TB SET specialty_id = ?, number_of_students = ? WHERE group_code = ?', [specialty_id, number_of_students, groupCode]);
+    const query = 'UPDATE groups_TB SET specialty_id = ?, number_of_students = ? WHERE group_code = ?';
+    pool.query(query, [specialty_id, number_of_students, groupCode], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating group');
+            return;
+        }
         res.status(200).send('Group updated successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error updating group');
-    }
+    });
 });
 
-app.delete('/api/groups/:groupCode', async (req, res) => {
+app.delete('/api/groups/:groupCode', (req, res) => {
     const { groupCode } = req.params;
-
-    try {
-        const [result] = await pool.query('DELETE FROM groups_TB WHERE group_code = ?', [groupCode]);
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).send('Group not found');
+    const query = 'DELETE FROM groups_TB WHERE group_code = ?';
+    pool.query(query, [groupCode], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting group');
+            return;
         }
-
         res.status(200).send('Group deleted successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error deleting group');
-    }
+    });
 });
 
 app.get('/api/teachers', async (req, res) => {
