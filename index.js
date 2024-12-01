@@ -139,7 +139,7 @@ app.get('/api/getTeacher', (req, res) => {
         AND s.semester_number = ?;
     `;
 
-    pool.query(sql, [`"${teacherName}"`, semester], (err, result) => {
+    pool.query(sql, [teacherName, semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
