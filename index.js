@@ -3,13 +3,13 @@ import mysql from 'mysql2';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import cors from 'cors'; 
+import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors()); 
+app.use(cors());
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -65,12 +65,16 @@ app.get('/api/getGroup', (req, res) => {
         a.building,
         a.audience_number,
         (
-            SELECT JSON_ARRAYAGG(
-                JSON_OBJECT('id', t.id, 'name', t.full_name)
-            )
-            FROM teachers_TB t
-            WHERE JSON_CONTAINS(s.teachers_list, CONCAT('"', t.full_name, '"'), '$')
-        ) AS teachers_with_post
+        SELECT JSON_ARRAYAGG(
+            JSON_OBJECT('id', t.id, 'name', t.full_name)
+        )
+        FROM teachers_TB t
+        WHERE JSON_CONTAINS(
+            s.teachers_list, 
+            CONCAT('{"id":', t.id, '}'), 
+            '$'
+        )
+    ) AS teachers_with_post
     FROM 
         schedule_TB s
     JOIN 
@@ -97,31 +101,35 @@ app.get('/api/getTeacher', (req, res) => {
     const semester = req.query.semester;
     const sql = `
     SELECT 
-        s.week_number, 
-        s.day_number, 
-        s.pair_number, 
-        c.subject_name,
-        s.groups_list, 
-        s.lesson_type, 
-        s.visit_format, 
-        a.building,
-        a.audience_number,
-        (
-            SELECT JSON_ARRAYAGG(
-                JSON_OBJECT('id', t.id, 'name', t.full_name)
-            )
-            FROM teachers_TB t
-            WHERE JSON_CONTAINS(s.teachers_list, CONCAT('"', t.full_name, '"'), '$')
-        ) AS teachers_with_post
-    FROM 
-        schedule_TB s
-    JOIN 
-        curriculum_TB c ON s.subject_id = c.id
-    LEFT JOIN
-        audience_TB a ON s.audience = a.id  
-    WHERE 
-        JSON_CONTAINS(s.teachers_list, ?, "$") 
-        AND s.semester_number = ?;
+    s.week_number, 
+    s.day_number, 
+    s.pair_number, 
+    c.subject_name,
+    s.groups_list, 
+    s.lesson_type, 
+    s.visit_format, 
+    a.building,
+    a.audience_number,
+    (
+        SELECT JSON_ARRAYAGG(
+            JSON_OBJECT('id', t.id, 'name', t.full_name)
+        )
+        FROM teachers_TB t
+        WHERE JSON_CONTAINS(
+            s.teachers_list, 
+            CONCAT('{"name":"', t.full_name, '"}'), 
+            '$'
+        )
+    ) AS teachers_with_post
+FROM 
+    schedule_TB s
+JOIN 
+    curriculum_TB c ON s.subject_id = c.id
+LEFT JOIN
+    audience_TB a ON s.audience = a.id  
+WHERE 
+    JSON_CONTAINS(s.teachers_list, '{"name":?}', "$") 
+    AND s.semester_number = ?;
   `;
     pool.query(sql, [teacherName, semester], (err, result) => {
         if (err) {
@@ -134,7 +142,7 @@ app.get('/api/getTeacher', (req, res) => {
     });
 });
 
-const JWT_SECRET = process.env.SECRET; 
+const JWT_SECRET = process.env.SECRET;
 
 function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('hex');
@@ -328,7 +336,7 @@ app.get('/api/curriculums', async (req, res) => {
 });
 
 app.post('/api/curriculums', (req, res) => {
-    const { subject_name, related_teachers, related_groups} = req.body;
+    const { subject_name, related_teachers, related_groups } = req.body;
 
     pool.getConnection((err, connection) => {
         if (err) {
