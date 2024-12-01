@@ -66,7 +66,7 @@ app.get('/api/getGroup', (req, res) => {
         a.audience_number,
         (
         SELECT JSON_ARRAYAGG(
-            JSON_OBJECT('id', t.id, 'name', t.full_name)
+            JSON_OBJECT('name', t.full_name, 'post', t.post)
         )
         FROM teachers_TB t
         WHERE JSON_CONTAINS(
@@ -119,7 +119,7 @@ app.get('/api/getTeacher', (req, res) => {
         a.audience_number,
         (
             SELECT JSON_ARRAYAGG(
-                JSON_OBJECT('id', t.id, 'name', t.full_name)
+                JSON_OBJECT('name', t.full_name, 'post', t.post)
             )
             FROM teachers_TB t
             WHERE JSON_CONTAINS(
