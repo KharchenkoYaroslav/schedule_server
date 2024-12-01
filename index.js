@@ -321,7 +321,7 @@ app.get('/api/curriculums', async (req, res) => {
 });
 
 app.post('/api/curriculums', (req, res) => {
-    const { subject_name, related_teachers, related_groups, correspondence } = req.body;
+    const { subject_name, related_teachers, related_groups} = req.body;
 
     pool.getConnection((err, connection) => {
         if (err) {
@@ -397,24 +397,6 @@ app.put('/api/curriculums/:curriculumId', (req, res) => {
         res.status(200).send('Teacher updated successfully');
     });
 });
-/*
-app.put('/api/curriculums/:curriculumId', async (req, res) => {
-    const { curriculumId } = req.params;
-    const { subject_name, related_teachers, related_groups, correspondence } = req.body;
-
-    try {
-        const teachersArray = related_teachers.map(teacher => `initTeacher(${curriculumId}, ${teacher.id}, ${teacher.planned_lectures}, ${teacher.planned_practicals}, ${teacher.planned_labs})`).join(', ');
-        const groupsArray = related_groups.map(group => `initGroup(${curriculumId}, '${group.code}', ${group.planned_lectures}, ${group.planned_practicals}, ${group.planned_labs})`).join(', ');
-
-        await pool.query(`UPDATE curriculum_TB SET subject_name = ?, related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}), correspondence = ? WHERE id = ?`, [subject_name, correspondence, curriculumId]);
-
-        res.status(200).send('Curriculum updated successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error updating curriculum');
-    }
-});
-*/
 
 app.delete('/api/curriculums/:curriculumId', (req, res) => {
     const { curriculumId } = req.params;
@@ -429,22 +411,4 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
     });
 });
 
-/*
-app.delete('/api/curriculums/:curriculumId', async (req, res) => {
-    const { curriculumId } = req.params;
-
-    try {
-        const [result] = await pool.query('DELETE FROM curriculum_TB WHERE id = ?', [curriculumId]);
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).send('Curriculum not found');
-        }
-
-        res.status(200).send('Curriculum deleted successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error deleting curriculum');
-    }
-});
-*/
 export default app;
