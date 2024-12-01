@@ -100,8 +100,8 @@ app.get('/api/getTeacher', (req, res) => {
     const teacherName = req.query.teacherName;
     const semester = req.query.semester;
 
-    // Перевірка, чи передані параметри
     if (!teacherName || !semester) {
+        console.error('Missing required parameters');
         res.status(400).send('Missing required parameters');
         return;
     }
@@ -135,17 +135,18 @@ app.get('/api/getTeacher', (req, res) => {
     LEFT JOIN
         audience_TB a ON s.audience = a.id  
     WHERE 
-        JSON_CONTAINS(s.teachers_list, '{"name":"?"}', "$") 
+        JSON_CONTAINS(s.teachers_list, JSON_OBJECT('name', ?), "$") 
         AND s.semester_number = ?;
     `;
 
-    pool.query(sql, [teacherName, semester], (err, result) => {
+    pool.query(sql, [`"${teacherName}"`, semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
             return;
         }
 
+        console.log('Query result:', result);
         res.json(result);
     });
 });
