@@ -337,8 +337,8 @@ app.post('/api/curriculums', (req, res) => {
                 return;
             }
 
-            const query1 = 'INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)';
-            connection.query(query1, [subject_name, correspondence], (err, result) => {
+            const query1 = 'INSERT INTO curriculum_TB (subject_name) VALUES (?)';
+            connection.query(query1, [subject_name], (err, result) => {
                 if (err) {
                     console.error('Error executing query:', err);
                     connection.rollback(() => {
@@ -381,14 +381,14 @@ app.post('/api/curriculums', (req, res) => {
 
 app.put('/api/curriculums/:curriculumId', (req, res) => {
     const { curriculumId } = req.params;
-    const { subject_name, related_teachers, related_groups, correspondence } = req.body;
+    const { subject_name, related_teachers, related_groups } = req.body;
 
     const teachersArray = related_teachers.map(teacher => `initTeacher(${curriculumId}, ${teacher.id}, ${teacher.planned_lectures}, ${teacher.planned_practicals}, ${teacher.planned_labs})`).join(', ');
     const groupsArray = related_groups.map(group => `initGroup(${curriculumId}, '${group.code}', ${group.planned_lectures}, ${group.planned_practicals}, ${group.planned_labs})`).join(', ');
 
 
-    const query = `UPDATE curriculum_TB SET subject_name = ?, related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}), correspondence = ? WHERE id = ?`;
-    pool.query(query, [subject_name, correspondence, curriculumId], (err, result) => {
+    const query = `UPDATE curriculum_TB SET subject_name = ?, related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}) WHERE id = ?`;
+    pool.query(query, [subject_name, curriculumId], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error updating teacher');
