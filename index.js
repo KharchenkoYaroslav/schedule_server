@@ -135,11 +135,11 @@ app.get('/api/getTeacher', (req, res) => {
     LEFT JOIN
         audience_TB a ON s.audience = a.id  
     WHERE 
-        JSON_CONTAINS(s.teachers_list, '{"name":?}', "$") 
+        JSON_CONTAINS(s.teachers_list, '{"name":"Тест"}', "$") 
         AND s.semester_number = ?;
     `;
 
-    pool.query(sql, [`"${teacherName}"`, semester], (err, result) => {
+    pool.query(sql, [semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
