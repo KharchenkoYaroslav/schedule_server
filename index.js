@@ -323,7 +323,6 @@ app.get('/api/curriculums', async (req, res) => {
 app.post('/api/curriculums', (req, res) => {
     const { subject_name, related_teachers, related_groups, correspondence } = req.body;
 
-    // Початок транзакції
     pool.getConnection((err, connection) => {
         if (err) {
             console.error('Error getting connection:', err);
@@ -338,7 +337,6 @@ app.post('/api/curriculums', (req, res) => {
                 return;
             }
 
-            // Вставка нової програми навчання
             const query1 = 'INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)';
             connection.query(query1, [subject_name, correspondence], (err, result) => {
                 if (err) {
@@ -351,11 +349,9 @@ app.post('/api/curriculums', (req, res) => {
 
                 const lastId = result.insertId;
 
-                // Формування масивів для оновлення зв'язків
                 const teachersArray = related_teachers.map(teacher => `initTeacher(${lastId}, ${teacher.id}, ${teacher.planned_lectures}, ${teacher.planned_practicals}, ${teacher.planned_labs})`).join(', ');
                 const groupsArray = related_groups.map(group => `initGroup(${lastId}, '${group.code}', ${group.planned_lectures}, ${group.planned_practicals}, ${group.planned_labs})`).join(', ');
 
-                // Оновлення програми навчання з новими зв'язками
                 const query2 = `UPDATE curriculum_TB SET related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}) WHERE id = ?`;
                 connection.query(query2, [lastId], (err, result) => {
                     if (err) {
@@ -366,7 +362,6 @@ app.post('/api/curriculums', (req, res) => {
                         return;
                     }
 
-                    // Підтвердження транзакції
                     connection.commit(err => {
                         if (err) {
                             console.error('Error committing transaction:', err);
@@ -383,26 +378,26 @@ app.post('/api/curriculums', (req, res) => {
         });
     });
 });
-/*
-app.post('/api/curriculums', async (req, res) => {
+
+app.put('/api/curriculums/:curriculumId', (req, res) => {
+    const { curriculumId } = req.params;
     const { subject_name, related_teachers, related_groups, correspondence } = req.body;
 
-    try {
-        const [result] = await pool.query('INSERT INTO curriculum_TB (subject_name, correspondence) VALUES (?, ?)', [subject_name, correspondence]);
-        const lastId = result.insertId;
+    const teachersArray = related_teachers.map(teacher => `initTeacher(${curriculumId}, ${teacher.id}, ${teacher.planned_lectures}, ${teacher.planned_practicals}, ${teacher.planned_labs})`).join(', ');
+    const groupsArray = related_groups.map(group => `initGroup(${curriculumId}, '${group.code}', ${group.planned_lectures}, ${group.planned_practicals}, ${group.planned_labs})`).join(', ');
 
-        const teachersArray = related_teachers.map(teacher => `initTeacher(${lastId}, ${teacher.id}, ${teacher.planned_lectures}, ${teacher.planned_practicals}, ${teacher.planned_labs})`).join(', ');
-        const groupsArray = related_groups.map(group => `initGroup(${lastId}, '${group.code}', ${group.planned_lectures}, ${group.planned_practicals}, ${group.planned_labs})`).join(', ');
 
-        await pool.query(`UPDATE curriculum_TB SET related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}) WHERE id = ?`, [lastId]);
-
-        res.status(201).send('Curriculum added successfully');
-    } catch (err) {
-        console.error('Error executing query:', err);
-        res.status(500).send('Error adding curriculum');
-    }
+    const query = `UPDATE curriculum_TB SET subject_name = ?, related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}), correspondence = ? WHERE id = ?`;
+    pool.query(query, [subject_name, correspondence, curriculumId], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating teacher');
+            return;
+        }
+        res.status(200).send('Teacher updated successfully');
+    });
 });
-*/
+/*
 app.put('/api/curriculums/:curriculumId', async (req, res) => {
     const { curriculumId } = req.params;
     const { subject_name, related_teachers, related_groups, correspondence } = req.body;
@@ -419,7 +414,22 @@ app.put('/api/curriculums/:curriculumId', async (req, res) => {
         res.status(500).send('Error updating curriculum');
     }
 });
+*/
 
+app.delete('/api/curriculums/:curriculumId', (req, res) => {
+    const { curriculumId } = req.params;
+    const query = 'DELETE FROM curriculum_TB WHERE id = ?';
+    pool.query(query, [curriculumId], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting teacher');
+            return;
+        }
+        res.status(200).send('Teacher deleted successfully');
+    });
+});
+
+/*
 app.delete('/api/curriculums/:curriculumId', async (req, res) => {
     const { curriculumId } = req.params;
 
@@ -436,5 +446,5 @@ app.delete('/api/curriculums/:curriculumId', async (req, res) => {
         res.status(500).send('Error deleting curriculum');
     }
 });
-
+*/
 export default app;
