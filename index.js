@@ -97,41 +97,49 @@ app.get('/api/getGroup', (req, res) => {
 });
 
 app.get('/api/getTeacher', (req, res) => {
-    const teacherName = `"${req.query.teacherName}"`;
+    const teacherName = req.query.teacherName;
     const semester = req.query.semester;
+
+    // Перевірка, чи передані параметри
+    if (!teacherName || !semester) {
+        res.status(400).send('Missing required parameters');
+        return;
+    }
+
     const sql = `
     SELECT 
-    s.week_number, 
-    s.day_number, 
-    s.pair_number, 
-    c.subject_name,
-    s.groups_list, 
-    s.lesson_type, 
-    s.visit_format, 
-    a.building,
-    a.audience_number,
-    (
-        SELECT JSON_ARRAYAGG(
-            JSON_OBJECT('id', t.id, 'name', t.full_name)
-        )
-        FROM teachers_TB t
-        WHERE JSON_CONTAINS(
-            s.teachers_list, 
-            CONCAT('{"name":"', t.full_name, '"}'), 
-            '$'
-        )
-    ) AS teachers_with_post
-FROM 
-    schedule_TB s
-JOIN 
-    curriculum_TB c ON s.subject_id = c.id
-LEFT JOIN
-    audience_TB a ON s.audience = a.id  
-WHERE 
-    JSON_CONTAINS(s.teachers_list, '{"name":?}', "$") 
-    AND s.semester_number = ?;
-  `;
-    pool.query(sql, [teacherName, semester], (err, result) => {
+        s.week_number, 
+        s.day_number, 
+        s.pair_number, 
+        c.subject_name,
+        s.groups_list, 
+        s.lesson_type, 
+        s.visit_format, 
+        a.building,
+        a.audience_number,
+        (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT('id', t.id, 'name', t.full_name)
+            )
+            FROM teachers_TB t
+            WHERE JSON_CONTAINS(
+                s.teachers_list, 
+                CONCAT('{"name":"', t.full_name, '"}'), 
+                '$'
+            )
+        ) AS teachers_with_post
+    FROM 
+        schedule_TB s
+    JOIN 
+        curriculum_TB c ON s.subject_id = c.id
+    LEFT JOIN
+        audience_TB a ON s.audience = a.id  
+    WHERE 
+        JSON_CONTAINS(s.teachers_list, '{"name":?}', "$") 
+        AND s.semester_number = ?;
+    `;
+
+    pool.query(sql, [`"${teacherName}"`, semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
