@@ -23,6 +23,12 @@ const pool = mysql.createPool({
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
+let lastDatabaseUpdate = new Date(); 
+
+app.get('/api/lastDatabaseUpdate', (req, res) => {
+    res.json({ lastUpdate: lastDatabaseUpdate });
+});
+
 app.get('/api/combinedList', (req, res) => {
     const queryGroups = 'SELECT group_code FROM groups_TB';
     const queryTeachers = 'SELECT full_name FROM teachers_TB';
@@ -237,6 +243,7 @@ app.post('/api/groups', (req, res) => {
             res.status(500).send('Error adding group');
             return;
         }
+        lastDatabaseUpdate = new Date(); 
         res.status(201).send('Group added successfully');
     });
 });
@@ -251,6 +258,7 @@ app.put('/api/groups/:groupCode', (req, res) => {
             res.status(500).send('Error updating group');
             return;
         }
+        lastDatabaseUpdate = new Date(); 
         res.status(200).send('Group updated successfully');
     });
 });
@@ -264,6 +272,7 @@ app.delete('/api/groups/:groupCode', (req, res) => {
             res.status(500).send('Error deleting group');
             return;
         }
+        lastDatabaseUpdate = new Date(); 
         res.status(200).send('Group deleted successfully');
     });
 });
@@ -289,6 +298,7 @@ app.post('/api/teachers', (req, res) => {
             res.status(500).send('Error adding teacher');
             return;
         }
+        lastDatabaseUpdate = new Date(); 
         res.status(201).send('Teacher added successfully');
     });
 });
@@ -303,6 +313,7 @@ app.put('/api/teachers/:teacherId', (req, res) => {
             res.status(500).send('Error updating teacher');
             return;
         }
+        lastDatabaseUpdate = new Date(); 
         res.status(200).send('Teacher updated successfully');
     });
 });
@@ -316,6 +327,7 @@ app.delete('/api/teachers/:teacherId', (req, res) => {
             res.status(500).send('Error deleting teacher');
             return;
         }
+        lastDatabaseUpdate = new Date(); 
         res.status(200).send('Teacher deleted successfully');
     });
 });
@@ -395,6 +407,7 @@ app.post('/api/curriculums', (req, res) => {
                             return;
                         }
 
+                        lastDatabaseUpdate = new Date(); 
                         res.status(201).send('Curriculum added successfully');
                     });
                 });
@@ -418,6 +431,7 @@ app.put('/api/curriculums/:curriculumId', (req, res) => {
             res.status(500).send('Error updating teacher');
             return;
         }
+        lastDatabaseUpdate = new Date(); 
         res.status(200).send('Teacher updated successfully');
     });
 });
@@ -431,6 +445,7 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
             res.status(500).send('Error deleting teacher');
             return;
         }
+        lastDatabaseUpdate = new Date(); 
         res.status(200).send('Teacher deleted successfully');
     });
 });
