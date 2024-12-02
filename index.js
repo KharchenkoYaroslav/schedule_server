@@ -27,7 +27,8 @@ app.get("/", (req, res) => res.send("Express on Vercel"));
 let lastDatabaseUpdate = new Date(); 
 
 app.get('/api/lastDatabaseUpdate', (req, res) => {
-    res.json({ lastUpdate: lastDatabaseUpdate });
+    const lastUpdate = lastDatabaseUpdate.toISOString().split('.')[0] + 'Z';
+    res.json({ lastUpdate });
 });
 
 app.get('/api/combinedList', (req, res) => {
