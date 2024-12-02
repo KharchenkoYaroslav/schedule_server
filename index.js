@@ -23,6 +23,7 @@ const pool = mysql.createPool({
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
+
 let lastDatabaseUpdate = new Date(); 
 
 app.get('/api/lastDatabaseUpdate', (req, res) => {
