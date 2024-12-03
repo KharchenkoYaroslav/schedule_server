@@ -132,7 +132,7 @@ app.get('/api/getTeacher', (req, res) => {
             FROM teachers_TB t
             WHERE JSON_CONTAINS(
                 s.teachers_list, 
-                CONCAT('{"name":"', t.full_name, '"}'), 
+                CONCAT('{"id":"', t.id, '"}'), 
                 '$'
             )
         ) AS teachers_with_post
@@ -147,7 +147,7 @@ app.get('/api/getTeacher', (req, res) => {
         AND s.semester_number = ?;
     `;
 
-    pool.query(sql, [number(teacherId), semester], (err, result) => {
+    pool.query(sql, [Number(teacherId), semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
