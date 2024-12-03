@@ -108,7 +108,7 @@ app.get('/api/getTeacher', (req, res) => {
     const teacherId = req.query.teacherId;
     const semester = req.query.semester;
 
-    if (!teacherName || !semester) {
+    if (!teacherId || !semester) {
         console.error('Missing required parameters');
         res.status(400).send('Missing required parameters');
         return;
