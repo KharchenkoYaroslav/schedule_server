@@ -147,7 +147,7 @@ app.get('/api/getTeacher', (req, res) => {
         AND s.semester_number = ?;
     `;
 
-    pool.query(sql, [teacherId, semester], (err, result) => {
+    pool.query(sql, [Number(teacherId), semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
