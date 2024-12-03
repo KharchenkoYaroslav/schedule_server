@@ -105,7 +105,7 @@ app.get('/api/getGroup', (req, res) => {
 });
 
 app.get('/api/getTeacher', (req, res) => {
-    const teacherName = req.query.teacherName;
+    const teacherId = req.query.teacherId;
     const semester = req.query.semester;
 
     if (!teacherName || !semester) {
@@ -143,11 +143,11 @@ app.get('/api/getTeacher', (req, res) => {
     LEFT JOIN
         audience_TB a ON s.audience = a.id  
     WHERE 
-        JSON_CONTAINS(s.teachers_list, JSON_OBJECT('name', ?), "$") 
+        JSON_CONTAINS(s.teachers_list, JSON_OBJECT('id', ?), "$") 
         AND s.semester_number = ?;
     `;
 
-    pool.query(sql, [teacherName, semester], (err, result) => {
+    pool.query(sql, [teacherId, semester], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching data');
