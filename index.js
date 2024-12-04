@@ -452,6 +452,7 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
     });
 });
 
+
 app.post('/api/updateSchedule', (req, res) => {
     const { isGroup, semester, source, destination } = req.body;
 
