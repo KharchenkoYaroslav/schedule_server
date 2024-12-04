@@ -454,7 +454,9 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
 
 
 app.post('/api/updateSchedule', (req, res) => {
-    const { isGroup, semester, source, destination } = req.body;
+    const { data } = req.body;
+
+    const {isGroup, semester, source, destination} = data;
 
     if (!isGroup || !semester || !source || !destination) {
         res.status(400).send('Missing required parameters1');
