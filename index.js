@@ -452,60 +452,6 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
     });
 });
 
-
-app.post('/api/updateSchedule', async (req, res) => {
-    const { data } = req.body;
-
-    const { isGroup, semester, source, destination } = data;
-
-    if (!isGroup || !semester || !source || !destination) {
-        return res.status(400).send('Missing required parameters1');
-    }
-
-    const { sourceId, sourceWeek, sourceDay, sourcePair } = source;
-    const { destinationId, destinationWeek, destinationDay, destinationPair } = destination;
-
-    if (!sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
-        return res.status(400).send('Missing required parameters2');
-    }
-
-    let connection;
-    try {
-        connection = await new Promise((resolve, reject) => {
-            pool.getConnection((err, conn) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(conn);
-                }
-            });
-        });
-
-        await new Promise((resolve, reject) => {
-            connection.query(
-                'CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair],
-                (err, results) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(results);
-                    }
-                }
-            );
-        });
-
-        res.status(200).send('Schedule updated successfully');
-    } catch (err) {
-        console.error('Error updating schedule:', err);
-        res.status(500).send(`Error updating schedule: ${err.message}`);
-    } finally {
-        if (connection) {
-            connection.release();
-        }
-    }
-});
-
 app.post('/api/updateSchedule', (req, res) => {
     const { data } = req.body;
 
