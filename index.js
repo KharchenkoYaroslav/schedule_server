@@ -452,17 +452,22 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
     });
 });
 
+app.post('/api/teachers', (req, res) => {
+    const { full_name, department, post } = req.body;
+    const query = 'INSERT INTO teachers_TB (full_name, department, post) VALUES (?, ?, ?)';
+    pool.query(query, [full_name, department, post], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding teacher');
+            return;
+        }
+        lastDatabaseUpdate = new Date();
+        res.status(201).send('Teacher added successfully');
+    });
+});
+
 app.post('/api/updateSchedule', (req, res) => {
-    const { data } = req.body;
-
-    const { isGroup, semester, source, destination } = data;
-
-    if (!isGroup || !semester || !source || !destination) {
-        return res.status(400).send('Missing required parameters');
-    }
-
-    const { sourceId, sourceWeek, sourceDay, sourcePair } = source;
-    const { destinationId, destinationWeek, destinationDay, destinationPair } = destination;
+    const { isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair } = req.body;
 
     if (!sourceId || !destinationId || !sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
         return res.status(400).send('Missing required parameters');
