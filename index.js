@@ -470,7 +470,7 @@ app.post('/api/updateSchedule', (req, res) => {
         return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
     }
 
-    const query = 'CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = `CALL UpdateSchedule(?, ?, '?', ?, ?, ?, '?', ?, ?, ?)`;
     pool.query(query, [isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
