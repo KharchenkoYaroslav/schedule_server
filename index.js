@@ -469,7 +469,7 @@ app.post('/api/teachers', (req, res) => {
 app.post('/api/updateSchedule', (req, res) => {
     const { isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair } = req.body;
 
-    if (!sourceId || !destinationId || !sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
+    if (!isGroup ||!semester ||!sourceId || !destinationId || !sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
         return res.status(400).send('Missing required parameters');
     }
 
