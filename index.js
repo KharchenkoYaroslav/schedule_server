@@ -452,77 +452,86 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
     });
 });
 
-app.get('/api/schedule', async (req, res) => {
-    const { isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair } = req.query;
 
-    if (!isGroup || !semester || !sourceId || !sourceWeek || !sourceDay || !sourcePair) {
-        return res.status(400).send('Missing required parameters');
+app.post('/api/updateSchedule', async (req, res) => {
+    const { data } = req.body;
+
+    const { isGroup, semester, source, destination } = data;
+
+    if (!isGroup || !semester || !source || !destination) {
+        return res.status(400).send('Missing required parameters1');
     }
 
-    const query = `
-        SELECT * FROM schedule_TB
-        WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
-        ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
-    `;
+    const { sourceId, sourceWeek, sourceDay, sourcePair } = source;
+    const { destinationId, destinationWeek, destinationDay, destinationPair } = destination;
 
-    const params = isGroup ? [sourceWeek, sourceDay, sourcePair, semester, sourceId] : [sourceWeek, sourceDay, sourcePair, semester, Number(sourceId)];
+    if (!sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
+        return res.status(400).send('Missing required parameters2');
+    }
 
+    let connection;
     try {
-        const [results] = await pool.promise().query(query, params);
-        res.json(results);
+        connection = await new Promise((resolve, reject) => {
+            pool.getConnection((err, conn) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(conn);
+                }
+            });
+        });
+
+        await new Promise((resolve, reject) => {
+            connection.query(
+                'CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair],
+                (err, results) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+            );
+        });
+
+        res.status(200).send('Schedule updated successfully');
     } catch (err) {
-        console.error('Error fetching schedule:', err);
-        res.status(500).send(`Error fetching schedule: ${err.message}`);
+        console.error('Error updating schedule:', err);
+        res.status(500).send(`Error updating schedule: ${err.message}`);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
-app.delete('/api/schedule', async (req, res) => {
-    const { isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair } = req.body;
+app.post('/api/updateSchedule', (req, res) => {
+    const { data } = req.body;
 
-    if (!isGroup || !semester || !sourceId || !sourceWeek || !sourceDay || !sourcePair) {
+    const { isGroup, semester, source, destination } = data;
+
+    if (!isGroup || !semester || !source || !destination) {
         return res.status(400).send('Missing required parameters');
     }
 
-    const query = `
-        DELETE FROM schedule_TB
-        WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
-        ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
-    `;
+    const { sourceId, sourceWeek, sourceDay, sourcePair } = source;
+    const { destinationId, destinationWeek, destinationDay, destinationPair } = destination;
 
-    const params = isGroup ? [sourceWeek, sourceDay, sourcePair, semester, sourceId] : [sourceWeek, sourceDay, sourcePair, semester, Number(sourceId)];
-
-    try {
-        await pool.promise().query(query, params);
-        res.status(200).send('Schedule deleted successfully');
-    } catch (err) {
-        console.error('Error deleting schedule:', err);
-        res.status(500).send(`Error deleting schedule: ${err.message}`);
-    }
-});
-
-app.post('/api/schedule', async (req, res) => {
-    const { isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, teachers_list, groups_list, subject_id, visit_format, lesson_type, audience } = req.body;
-
-    if (!isGroup || !semester || !sourceId || !sourceWeek || !sourceDay || !sourcePair || !teachers_list || !groups_list || !subject_id || !visit_format || !lesson_type || !audience) {
+    if (!sourceId || !destinationId || !sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
         return res.status(400).send('Missing required parameters');
     }
 
-    const query = `
-        INSERT INTO schedule_TB (teachers_list, groups_list, subject_id, semester_number, week_number, day_number, pair_number, visit_format, lesson_type, audience)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const params = [teachers_list, groups_list, subject_id, semester, sourceWeek, sourceDay, sourcePair, visit_format, lesson_type, audience];
-
-    try {
-        await pool.promise().query(query, params);
-        res.status(200).send('Schedule added successfully');
-    } catch (err) {
-        console.error('Error adding schedule:', err);
-        res.status(500).send(`Error adding schedule: ${err.message}`);
-    }
+    const query = 'CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    pool.query(query, [isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating schedule');
+            return;
+        }
+        lastDatabaseUpdate = new Date();
+        res.status(201).send('Schedule updated added successfully');
+    });
 });
-
-
 
 export default app;
