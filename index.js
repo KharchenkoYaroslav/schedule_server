@@ -458,7 +458,6 @@ app.post('/api/updateSchedule', (req, res) => {
 
     const missingParams = [];
 
-    if (!isGroup) missingParams.push('isGroup');
     if (!semester) missingParams.push('semester');
     if (!sourceWeek) missingParams.push('sourceWeek');
     if (!sourceDay) missingParams.push('sourceDay');
