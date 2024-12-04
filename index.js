@@ -478,7 +478,7 @@ app.post('/api/updateSchedule', (req, res) => {
             return;
         }
         lastDatabaseUpdate = new Date();
-        res.status(400).send(`Schedule updated successfully ${sourcePair}`);
+        res.status(400).send(`Schedule updated successfully ${sourceId}`);
     });
 });
 
