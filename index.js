@@ -466,6 +466,7 @@ app.post('/api/teachers', (req, res) => {
     });
 });
 
+
 app.post('/api/updateSchedule', (req, res) => {
     const { isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair } = req.body;
 
