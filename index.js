@@ -452,26 +452,23 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
     });
 });
 
-app.post('/api/teachers', (req, res) => {
-    const { full_name, department, post } = req.body;
-    const query = 'INSERT INTO teachers_TB (full_name, department, post) VALUES (?, ?, ?)';
-    pool.query(query, [full_name, department, post], (err, result) => {
-        if (err) {
-            console.error('Error executing query:', err);
-            res.status(500).send('Error adding teacher');
-            return;
-        }
-        lastDatabaseUpdate = new Date();
-        res.status(201).send('Teacher added successfully');
-    });
-});
-
 
 app.post('/api/updateSchedule', (req, res) => {
     const { isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair } = req.body;
 
-    if (!isGroup ||!semester || !sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
-        return res.status(400).send('Missing required parameters');
+    const missingParams = [];
+
+    if (!isGroup) missingParams.push('isGroup');
+    if (!semester) missingParams.push('semester');
+    if (!sourceWeek) missingParams.push('sourceWeek');
+    if (!sourceDay) missingParams.push('sourceDay');
+    if (!sourcePair) missingParams.push('sourcePair');
+    if (!destinationWeek) missingParams.push('destinationWeek');
+    if (!destinationDay) missingParams.push('destinationDay');
+    if (!destinationPair) missingParams.push('destinationPair');
+
+    if (missingParams.length > 0) {
+        return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
     }
 
     const query = 'CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
@@ -482,7 +479,7 @@ app.post('/api/updateSchedule', (req, res) => {
             return;
         }
         lastDatabaseUpdate = new Date();
-        res.status(201).send('Schedule updated added successfully');
+        res.status(201).send('Schedule updated successfully');
     });
 });
 
