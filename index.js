@@ -470,15 +470,6 @@ app.post('/api/updateSchedule', (req, res) => {
         return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
     }
 
-    // Видалення лапок з sourceId та destinationId, якщо вони є
-    if (typeof sourceId === 'string' && sourceId.startsWith('"') && sourceId.endsWith('"')) {
-        sourceId = sourceId.slice(1, -1);
-    }
-
-    if (typeof destinationId === 'string' && destinationId.startsWith('"') && destinationId.endsWith('"')) {
-        destinationId = destinationId.slice(1, -1);
-    }
-
     const query = `CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     pool.query(query, [isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair], (err, result) => {
         if (err) {
@@ -487,7 +478,7 @@ app.post('/api/updateSchedule', (req, res) => {
             return;
         }
         lastDatabaseUpdate = new Date();
-        res.status(201).send('Schedule updated successfully');
+        res.status(400).send(`Schedule updated successfully ${sourcePair}`);
     });
 });
 
