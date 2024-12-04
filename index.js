@@ -453,194 +453,201 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
 });
 
 
-app.post('/api/updateSchedule', (req, res) => {
+app.post('/api/updateSchedule', async (req, res) => {
     const { data } = req.body;
 
-    const {isGroup, semester, source, destination} = data;
+    const { isGroup, semester, source, destination } = data;
 
     if (!isGroup || !semester || !source || !destination) {
-        res.status(400).send('Missing required parameters1');
-        return;
+        return res.status(400).send('Missing required parameters1');
     }
 
     const { sourceId, sourceWeek, sourceDay, sourcePair } = source;
     const { destinationId, destinationWeek, destinationDay, destinationPair } = destination;
 
     if (!sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
-        res.status(400).send('Missing required parameters2');
-        return;
+        return res.status(400).send('Missing required parameters2');
     }
 
-    pool.getConnection((err, connection) => {
-        if (err) {
-            console.error('Error getting connection:', err);
-            res.status(500).send('Error updating schedule');
-            return;
-        }
-
-        connection.beginTransaction(err => {
-            if (err) {
-                console.error('Error starting transaction:', err);
-                res.status(500).send('Error updating schedule');
-                return;
-            }
-
-            const getSourceQuery = `
-                SELECT * FROM schedule_TB
-                WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
-                ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
-            `;
-            const getDestinationQuery = `
-                SELECT * FROM schedule_TB
-                WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
-                ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
-            `;
-
-            const sourceParams = isGroup ? [sourceWeek, sourceDay, sourcePair, semester, sourceId] : [sourceWeek, sourceDay, sourcePair, semester, Number(sourceId)];
-            const destinationParams = isGroup ? [destinationWeek, destinationDay, destinationPair, semester, destinationId] : [destinationWeek, destinationDay, destinationPair, semester, Number(destinationId)];
-
-            connection.query(getSourceQuery, sourceParams, (err, sourceResults) => {
+    let connection;
+    try {
+        connection = await new Promise((resolve, reject) => {
+            pool.getConnection((err, conn) => {
                 if (err) {
-                    console.error('Error executing query:', err);
-                    connection.rollback(() => {
-                        res.status(500).send('Error updating schedule');
-                    });
-                    return;
+                    reject(err);
+                } else {
+                    resolve(conn);
                 }
-
-                connection.query(getDestinationQuery, destinationParams, (err, destinationResults) => {
-                    if (err) {
-                        console.error('Error executing query:', err);
-                        connection.rollback(() => {
-                            res.status(500).send('Error updating schedule');
-                        });
-                        return;
-                    }
-
-                    if (sourceResults.length === 0 || destinationResults.length === 0) {
-                        connection.rollback(() => {
-                            res.status(404).send('Source or destination not found');
-                        });
-                        return;
-                    }
-
-                    const deleteSourceQuery = `
-                        DELETE FROM schedule_TB
-                        WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
-                        ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
-                    `;
-                    const deleteDestinationQuery = `
-                        DELETE FROM schedule_TB
-                        WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
-                        ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
-                    `;
-
-                    connection.query(deleteSourceQuery, sourceParams, (err, result) => {
-                        if (err) {
-                            console.error('Error executing query:', err);
-                            connection.rollback(() => {
-                                res.status(500).send('Error updating schedule');
-                            });
-                            return;
-                        }
-
-                        connection.query(deleteDestinationQuery, destinationParams, (err, result) => {
-                            if (err) {
-                                console.error('Error executing query:', err);
-                                connection.rollback(() => {
-                                    res.status(500).send('Error updating schedule');
-                                });
-                                return;
-                            }
-
-                            const insertSourceQuery = `
-                                INSERT INTO schedule_TB (teachers_list, groups_list, subject_id, semester_number, week_number, day_number, pair_number, visit_format, lesson_type, audience)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            `;
-                            const insertDestinationQuery = `
-                                INSERT INTO schedule_TB (teachers_list, groups_list, subject_id, semester_number, week_number, day_number, pair_number, visit_format, lesson_type, audience)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            `;
-
-                            const insertPromises = [];
-
-                            sourceResults.forEach(sourceData => {
-                                const sourceInsertParams = [
-                                    sourceData.teachers_list,
-                                    sourceData.groups_list,
-                                    sourceData.subject_id,
-                                    semester,
-                                    destinationWeek,
-                                    destinationDay,
-                                    destinationPair,
-                                    sourceData.visit_format,
-                                    sourceData.lesson_type,
-                                    sourceData.audience
-                                ];
-
-                                insertPromises.push(new Promise((resolve, reject) => {
-                                    connection.query(insertSourceQuery, sourceInsertParams, (err, result) => {
-                                        if (err) {
-                                            reject(err);
-                                        } else {
-                                            resolve(result);
-                                        }
-                                    });
-                                }));
-                            });
-
-                            destinationResults.forEach(destinationData => {
-                                const destinationInsertParams = [
-                                    destinationData.teachers_list,
-                                    destinationData.groups_list,
-                                    destinationData.subject_id,
-                                    semester,
-                                    sourceWeek,
-                                    sourceDay,
-                                    sourcePair,
-                                    destinationData.visit_format,
-                                    destinationData.lesson_type,
-                                    destinationData.audience
-                                ];
-
-                                insertPromises.push(new Promise((resolve, reject) => {
-                                    connection.query(insertDestinationQuery, destinationInsertParams, (err, result) => {
-                                        if (err) {
-                                            reject(err);
-                                        } else {
-                                            resolve(result);
-                                        }
-                                    });
-                                }));
-                            });
-
-                            Promise.all(insertPromises)
-                                .then(() => {
-                                    connection.commit(err => {
-                                        if (err) {
-                                            console.error('Error committing transaction:', err);
-                                            connection.rollback(() => {
-                                                res.status(500).send('Error updating schedule');
-                                            });
-                                            return;
-                                        }
-
-                                        lastDatabaseUpdate = new Date(); 
-                                        res.status(200).send('Schedule updated successfully');
-                                    });
-                                })
-                                .catch(err => {
-                                    console.error('Error executing query:', err);
-                                    connection.rollback(() => {
-                                        res.status(500).send('Error updating schedule');
-                                    });
-                                });
-                        });
-                    });
-                });
             });
         });
-    });
+
+        await new Promise((resolve, reject) => {
+            connection.beginTransaction(err => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        const getSourceQuery = `
+            SELECT * FROM schedule_TB
+            WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
+            ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
+        `;
+        const getDestinationQuery = `
+            SELECT * FROM schedule_TB
+            WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
+            ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
+        `;
+
+        const sourceParams = isGroup ? [sourceWeek, sourceDay, sourcePair, semester, sourceId] : [sourceWeek, sourceDay, sourcePair, semester, Number(sourceId)];
+        const destinationParams = isGroup ? [destinationWeek, destinationDay, destinationPair, semester, destinationId] : [destinationWeek, destinationDay, destinationPair, semester, Number(destinationId)];
+
+        const sourceResults = await new Promise((resolve, reject) => {
+            connection.query(getSourceQuery, sourceParams, (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
+
+        const destinationResults = await new Promise((resolve, reject) => {
+            connection.query(getDestinationQuery, destinationParams, (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
+
+        if (sourceResults.length === 0 || destinationResults.length === 0) {
+            throw new Error('Source or destination not found');
+        }
+
+        const deleteSourceQuery = `
+            DELETE FROM schedule_TB
+            WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
+            ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
+        `;
+        const deleteDestinationQuery = `
+            DELETE FROM schedule_TB
+            WHERE week_number = ? AND day_number = ? AND pair_number = ? AND semester_number = ?
+            ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
+        `;
+
+        await new Promise((resolve, reject) => {
+            connection.query(deleteSourceQuery, sourceParams, (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+
+        await new Promise((resolve, reject) => {
+            connection.query(deleteDestinationQuery, destinationParams, (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+
+        const insertSourceQuery = `
+            INSERT INTO schedule_TB (teachers_list, groups_list, subject_id, semester_number, week_number, day_number, pair_number, visit_format, lesson_type, audience)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const insertDestinationQuery = `
+            INSERT INTO schedule_TB (teachers_list, groups_list, subject_id, semester_number, week_number, day_number, pair_number, visit_format, lesson_type, audience)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const insertPromises = [];
+
+        sourceResults.forEach(sourceData => {
+            const sourceInsertParams = [
+                sourceData.teachers_list,
+                sourceData.groups_list,
+                sourceData.subject_id,
+                semester,
+                destinationWeek,
+                destinationDay,
+                destinationPair,
+                sourceData.visit_format,
+                sourceData.lesson_type,
+                sourceData.audience
+            ];
+
+            insertPromises.push(new Promise((resolve, reject) => {
+                connection.query(insertSourceQuery, sourceInsertParams, (err, result) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(result);
+                    }
+                });
+            }));
+        });
+
+        destinationResults.forEach(destinationData => {
+            const destinationInsertParams = [
+                destinationData.teachers_list,
+                destinationData.groups_list,
+                destinationData.subject_id,
+                semester,
+                sourceWeek,
+                sourceDay,
+                sourcePair,
+                destinationData.visit_format,
+                destinationData.lesson_type,
+                destinationData.audience
+            ];
+
+            insertPromises.push(new Promise((resolve, reject) => {
+                connection.query(insertDestinationQuery, destinationInsertParams, (err, result) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(result);
+                    }
+                });
+            }));
+        });
+
+        await Promise.all(insertPromises);
+
+        await new Promise((resolve, reject) => {
+            connection.commit(err => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        lastDatabaseUpdate = new Date();
+        res.status(200).send('Schedule updated successfully');
+    } catch (err) {
+        console.error('Error updating schedule:', err);
+        if (connection) {
+            await new Promise((resolve, reject) => {
+                connection.rollback(resolve);
+            });
+        }
+        res.status(500).send(`Error updating schedule: ${err.message}`);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
 });
 
 export default app;
