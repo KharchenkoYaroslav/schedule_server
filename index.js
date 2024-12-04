@@ -494,9 +494,9 @@ app.post('/api/updateSchedule', (req, res) => {
             `;
 
             const sourceParams = isGroup ? [sourceWeek, sourceDay, sourcePair, semester, source.id] : [sourceWeek, sourceDay, sourcePair, semester, Number(source.id)];
-            const destinationParams = isGroup ? [destinationWeek, destinationDay, destinationPair, semester, destination.id] : [destinationWeek, destinationDay, destinationPair, semester, Number(destination.id)];
+            const destinationParams = isGroup ? [destinationWeek, destinationDay, destinationPair, semester, destination.name] : [destinationWeek, destinationDay, destinationPair, semester, Number(destination.name)];
 
-            connection.query(getSourceQuery, sourceParams, (err, sourceResult) => {
+            connection.query(getSourceQuery, sourceParams, (err, sourceResults) => {
                 if (err) {
                     console.error('Error executing query:', err);
                     connection.rollback(() => {
@@ -505,7 +505,7 @@ app.post('/api/updateSchedule', (req, res) => {
                     return;
                 }
 
-                connection.query(getDestinationQuery, destinationParams, (err, destinationResult) => {
+                connection.query(getDestinationQuery, destinationParams, (err, destinationResults) => {
                     if (err) {
                         console.error('Error executing query:', err);
                         connection.rollback(() => {
@@ -514,15 +514,12 @@ app.post('/api/updateSchedule', (req, res) => {
                         return;
                     }
 
-                    if (sourceResult.length === 0 || destinationResult.length === 0) {
+                    if (sourceResults.length === 0 || destinationResults.length === 0) {
                         connection.rollback(() => {
                             res.status(404).send('Source or destination not found');
                         });
                         return;
                     }
-
-                    const sourceData = sourceResult[0];
-                    const destinationData = destinationResult[0];
 
                     const deleteSourceQuery = `
                         DELETE FROM schedule_TB
@@ -562,50 +559,60 @@ app.post('/api/updateSchedule', (req, res) => {
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             `;
 
-                            const sourceInsertParams = [
-                                sourceData.teachers_list,
-                                sourceData.groups_list,
-                                sourceData.subject_id,
-                                semester,
-                                destinationWeek,
-                                destinationDay,
-                                destinationPair,
-                                sourceData.visit_format,
-                                sourceData.lesson_type,
-                                sourceData.audience
-                            ];
+                            const insertPromises = [];
 
-                            const destinationInsertParams = [
-                                destinationData.teachers_list,
-                                destinationData.groups_list,
-                                destinationData.subject_id,
-                                semester,
-                                sourceWeek,
-                                sourceDay,
-                                sourcePair,
-                                destinationData.visit_format,
-                                destinationData.lesson_type,
-                                destinationData.audience
-                            ];
+                            sourceResults.forEach(sourceData => {
+                                const sourceInsertParams = [
+                                    sourceData.teachers_list,
+                                    sourceData.groups_list,
+                                    sourceData.subject_id,
+                                    semester,
+                                    destinationWeek,
+                                    destinationDay,
+                                    destinationPair,
+                                    sourceData.visit_format,
+                                    sourceData.lesson_type,
+                                    sourceData.audience
+                                ];
 
-                            connection.query(insertSourceQuery, sourceInsertParams, (err, result) => {
-                                if (err) {
-                                    console.error('Error executing query:', err);
-                                    connection.rollback(() => {
-                                        res.status(500).send('Error updating schedule');
+                                insertPromises.push(new Promise((resolve, reject) => {
+                                    connection.query(insertSourceQuery, sourceInsertParams, (err, result) => {
+                                        if (err) {
+                                            reject(err);
+                                        } else {
+                                            resolve(result);
+                                        }
                                     });
-                                    return;
-                                }
+                                }));
+                            });
 
-                                connection.query(insertDestinationQuery, destinationInsertParams, (err, result) => {
-                                    if (err) {
-                                        console.error('Error executing query:', err);
-                                        connection.rollback(() => {
-                                            res.status(500).send('Error updating schedule');
-                                        });
-                                        return;
-                                    }
+                            destinationResults.forEach(destinationData => {
+                                const destinationInsertParams = [
+                                    destinationData.teachers_list,
+                                    destinationData.groups_list,
+                                    destinationData.subject_id,
+                                    semester,
+                                    sourceWeek,
+                                    sourceDay,
+                                    sourcePair,
+                                    destinationData.visit_format,
+                                    destinationData.lesson_type,
+                                    destinationData.audience
+                                ];
 
+                                insertPromises.push(new Promise((resolve, reject) => {
+                                    connection.query(insertDestinationQuery, destinationInsertParams, (err, result) => {
+                                        if (err) {
+                                            reject(err);
+                                        } else {
+                                            resolve(result);
+                                        }
+                                    });
+                                }));
+                            });
+
+                            Promise.all(insertPromises)
+                                .then(() => {
                                     connection.commit(err => {
                                         if (err) {
                                             console.error('Error committing transaction:', err);
@@ -618,8 +625,13 @@ app.post('/api/updateSchedule', (req, res) => {
                                         lastDatabaseUpdate = new Date(); 
                                         res.status(200).send('Schedule updated successfully');
                                     });
+                                })
+                                .catch(err => {
+                                    console.error('Error executing query:', err);
+                                    connection.rollback(() => {
+                                        res.status(500).send('Error updating schedule');
+                                    });
                                 });
-                            });
                         });
                     });
                 });
