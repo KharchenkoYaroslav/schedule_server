@@ -463,8 +463,8 @@ app.post('/api/updateSchedule', (req, res) => {
         return;
     }
 
-    const { sourceWeek, sourceDay, sourcePair } = source;
-    const { destinationWeek, destinationDay, destinationPair } = destination;
+    const { sourceId, sourceWeek, sourceDay, sourcePair } = source;
+    const { destinationId, destinationWeek, destinationDay, destinationPair } = destination;
 
     if (!sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
         res.status(400).send('Missing required parameters2');
@@ -496,8 +496,8 @@ app.post('/api/updateSchedule', (req, res) => {
                 ${isGroup ? 'AND JSON_CONTAINS(groups_list, ?, "$")' : 'AND JSON_CONTAINS(teachers_list, JSON_OBJECT("id", ?), "$")'}
             `;
 
-            const sourceParams = isGroup ? [sourceWeek, sourceDay, sourcePair, semester, source.id] : [sourceWeek, sourceDay, sourcePair, semester, Number(source.id)];
-            const destinationParams = isGroup ? [destinationWeek, destinationDay, destinationPair, semester, destination.name] : [destinationWeek, destinationDay, destinationPair, semester, Number(destination.name)];
+            const sourceParams = isGroup ? [sourceWeek, sourceDay, sourcePair, semester, sourceId] : [sourceWeek, sourceDay, sourcePair, semester, Number(sourceId)];
+            const destinationParams = isGroup ? [destinationWeek, destinationDay, destinationPair, semester, destinationId] : [destinationWeek, destinationDay, destinationPair, semester, Number(destinationId)];
 
             connection.query(getSourceQuery, sourceParams, (err, sourceResults) => {
                 if (err) {
