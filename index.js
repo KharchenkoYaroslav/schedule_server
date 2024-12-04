@@ -456,7 +456,7 @@ app.post('/api/updateSchedule', (req, res) => {
     const { isGroup, semester, source, destination } = req.body;
 
     if (!isGroup || !semester || !source || !destination) {
-        res.status(400).send('Missing required parameters');
+        res.status(400).send('Missing required parameters1');
         return;
     }
 
@@ -464,7 +464,7 @@ app.post('/api/updateSchedule', (req, res) => {
     const { destinationWeek, destinationDay, destinationPair } = destination;
 
     if (!sourceWeek || !sourceDay || !sourcePair || !destinationWeek || !destinationDay || !destinationPair) {
-        res.status(400).send('Missing required parameters');
+        res.status(400).send('Missing required parameters2');
         return;
     }
 
