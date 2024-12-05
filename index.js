@@ -582,7 +582,7 @@ app.get('/api/getPairsByCriteria', (req, res) => {
         );
     `;
 
-    pool.query(query, [semester, weekNumber, dayNumber, pairNumber, groupId, groupId, teacherId, teacherId], (err, result) => {
+    pool.query(query, [semester, weekNumber, dayNumber, pairNumber, groupId, groupId, Number(teacherId), Number(teacherId)], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching pairs');
