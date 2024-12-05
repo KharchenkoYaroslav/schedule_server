@@ -23,7 +23,6 @@ const pool = mysql.createPool({
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-
 let lastDatabaseUpdate = new Date();
 
 app.get('/api/lastDatabaseUpdate', (req, res) => {
@@ -452,9 +451,8 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
     });
 });
 
-
 app.post('/api/updateSchedule', (req, res) => {
-    const {semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair } = req.body;
+    const { semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair } = req.body;
 
     const missingParams = [];
 
@@ -568,6 +566,44 @@ app.delete('/api/deletePair/:id', (req, res) => {
         }
         lastDatabaseUpdate = new Date();
         res.status(200).send('Pair deleted successfully');
+    });
+});
+
+// Додаємо новий маршрут для отримання всіх пар за критеріями
+app.get('/api/getPairsByCriteria', (req, res) => {
+    const { semester, groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
+
+    const missingParams = [];
+
+    if (!semester) missingParams.push('semester');
+    if (!weekNumber) missingParams.push('weekNumber');
+    if (!dayNumber) missingParams.push('dayNumber');
+    if (!pairNumber) missingParams.push('pairNumber');
+
+    if (missingParams.length > 0) {
+        return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
+    }
+
+    const query = `
+        SELECT * FROM schedule_TB
+        WHERE semester_number = ?
+        AND week_number = ?
+        AND day_number = ?
+        AND pair_number = ?
+        AND (
+            (? IS NULL OR JSON_CONTAINS(groups_list, JSON_OBJECT('id', ?)))
+            AND
+            (? IS NULL OR JSON_CONTAINS(teachers_list, JSON_OBJECT('id', ?)))
+        )
+    `;
+
+    pool.query(query, [semester, weekNumber, dayNumber, pairNumber, groupId, groupId, teacherId, teacherId], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching pairs');
+            return;
+        }
+        res.json(result);
     });
 });
 
