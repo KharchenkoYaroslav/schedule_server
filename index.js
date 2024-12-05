@@ -559,6 +559,7 @@ app.put('/api/editPair', (req, res) => {
     });
 });
 
+
 app.get('/api/getPairsByCriteria', (req, res) => {
     const { semester, groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
 
