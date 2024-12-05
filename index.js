@@ -454,7 +454,7 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
 
 
 app.post('/api/updateSchedule', (req, res) => {
-    const { isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair } = req.body;
+    const {semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair } = req.body;
 
     const missingParams = [];
 
@@ -470,8 +470,8 @@ app.post('/api/updateSchedule', (req, res) => {
         return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
     }
 
-    const query = `CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    pool.query(query, [isGroup, semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair], (err, result) => {
+    const query = `CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    pool.query(query, [semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error updating schedule');
