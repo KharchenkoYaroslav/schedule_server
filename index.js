@@ -560,7 +560,7 @@ app.put('/api/editPair', (req, res) => {
 });
 
 app.get('/api/getPairsByCriteria', (req, res) => {
-    const { semester_number, groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
+    const { semester, groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
 
     const missingParams = [];
 
