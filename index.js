@@ -554,7 +554,6 @@ app.put('/api/editPair', (req, res) => {
     });
 });
 
-// Додаємо новий маршрут для отримання всіх пар за критеріями
 app.get('/api/getPairsByCriteria', (req, res) => {
     const { semester, groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
 
@@ -576,7 +575,7 @@ app.get('/api/getPairsByCriteria', (req, res) => {
         AND day_number = ?
         AND pair_number = ?
         AND (
-            (? IS NULL OR JSON_CONTAINS(groups_list, JSON_QUOTE(?), '$'))
+            (? IS NULL OR JSON_CONTAINS(groups_list, ?, '$'))
             AND
             (? IS NULL OR JSON_CONTAINS(teachers_list, JSON_OBJECT('id', ?)))
         )
