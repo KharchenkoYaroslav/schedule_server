@@ -575,9 +575,9 @@ app.get('/api/getPairsByCriteria', (req, res) => {
         AND day_number = ?
         AND pair_number = ?
         AND (
-            (? IS NULL OR JSON_CONTAINS(groups_list, ?, '$'))
+            (? IS NULL OR JSON_CONTAINS(groups_list, ?, "$"))
             AND
-            (? IS NULL OR JSON_CONTAINS(teachers_list, JSON_OBJECT('id', ?)))
+            (? IS NULL OR (s.teachers_list, JSON_OBJECT('id', ?), "$") )
         )
     `;
 
