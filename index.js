@@ -507,7 +507,7 @@ app.post('/api/addPair', (req, res) => {
     pool.query(query, [semester_number, groups_list, teachers_list, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
-            res.status(500).send(`${query}`);
+            res.status(500).send(`${err}`);
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -545,7 +545,7 @@ app.put('/api/editPair', (req, res) => {
     pool.query(query, [semester_number, groups_list, teachers_list, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience, id], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
-            res.status(500).send('Error editing pair');
+            res.status(500).send(`${err}`);
             return;
         }
         lastDatabaseUpdate = new Date();
