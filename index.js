@@ -482,4 +482,93 @@ app.post('/api/updateSchedule', (req, res) => {
     });
 });
 
+app.post('/api/addPair', (req, res) => {
+    const { semester, groupId, teacherId, subjectId, weekNumber, dayNumber, pairNumber, lessonType, visitFormat, audience } = req.body;
+
+    const missingParams = [];
+
+    if (!semester) missingParams.push('semester');
+    if (!subjectId) missingParams.push('subjectId');
+    if (!weekNumber) missingParams.push('weekNumber');
+    if (!dayNumber) missingParams.push('dayNumber');
+    if (!pairNumber) missingParams.push('pairNumber');
+    if (!lessonType) missingParams.push('lessonType');
+    if (!visitFormat) missingParams.push('visitFormat');
+
+    if (missingParams.length > 0) {
+        return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
+    }
+
+    const query = `
+        INSERT INTO schedule_TB (semester_number, groups_list, teachers_list, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const groupsList = groupId ? JSON.stringify(groupId) : null;
+    const teachersList = teacherId ? JSON.stringify(teacherId) : null;
+
+    pool.query(query, [semester, groupsList, teachersList, subjectId, weekNumber, dayNumber, pairNumber, lessonType, visitFormat, audience], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding pair');
+            return;
+        }
+        lastDatabaseUpdate = new Date();
+        res.status(201).send('Pair added successfully');
+    });
+});
+
+app.put('/api/editPair', (req, res) => {
+    const { id, semester, groupId, teacherId, subjectId, weekNumber, dayNumber, pairNumber, lessonType, visitFormat, audience } = req.body;
+
+    const missingParams = [];
+
+    if (!id) missingParams.push('id');
+    if (!semester) missingParams.push('semester');
+    if (!subjectId) missingParams.push('subjectId');
+    if (!weekNumber) missingParams.push('weekNumber');
+    if (!dayNumber) missingParams.push('dayNumber');
+    if (!pairNumber) missingParams.push('pairNumber');
+    if (!lessonType) missingParams.push('lessonType');
+    if (!visitFormat) missingParams.push('visitFormat');
+
+    if (missingParams.length > 0) {
+        return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
+    }
+
+    const query = `
+        UPDATE schedule_TB
+        SET semester_number = ?, groups_list = ?, teachers_list = ?, subject_id = ?, week_number = ?, day_number = ?, pair_number = ?, lesson_type = ?, visit_format = ?, audience = ?
+        WHERE id = ?
+    `;
+
+    const groupsList = groupId ? JSON.stringify(groupId) : null;
+    const teachersList = teacherId ? JSON.stringify(teacherId) : null;
+
+    pool.query(query, [semester, groupsList, teachersList, subjectId, weekNumber, dayNumber, pairNumber, lessonType, visitFormat, audience, id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error editing pair');
+            return;
+        }
+        lastDatabaseUpdate = new Date();
+        res.status(200).send('Pair edited successfully');
+    });
+});
+
+app.delete('/api/deletePair/:id', (req, res) => {
+    const { id } = req.params;
+
+    const query = 'DELETE FROM schedule_TB WHERE id = ?';
+    pool.query(query, [id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting pair');
+            return;
+        }
+        lastDatabaseUpdate = new Date();
+        res.status(200).send('Pair deleted successfully');
+    });
+});
+
 export default app;
