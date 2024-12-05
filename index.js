@@ -481,17 +481,19 @@ app.post('/api/updateSchedule', (req, res) => {
 });
 
 app.post('/api/addPair', (req, res) => {
-    const { semester, groupId, teacherId, subjectId, weekNumber, dayNumber, pairNumber, lessonType, visitFormat, audience } = req.body;
+    const { semester_number, groups_list, teachers_list, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience } = req.body;
 
     const missingParams = [];
 
-    if (typeof semester === 'undefined') missingParams.push('semester');
-    if (typeof subjectId === 'undefined') missingParams.push('subjectId');
-    if (typeof weekNumber === 'undefined') missingParams.push('weekNumber');
-    if (typeof dayNumber === 'undefined') missingParams.push('dayNumber');
-    if (typeof pairNumber === 'undefined') missingParams.push('pairNumber');
-    if (typeof lessonType === 'undefined') missingParams.push('lessonType');
-    if (typeof visitFormat === 'undefined') missingParams.push('visitFormat');
+    if (typeof semester_number === 'undefined') missingParams.push('semester');
+    if (typeof groups_list === 'undefined') missingParams.push('groups_list');
+    if (typeof teachers_list === 'undefined') missingParams.push('teachers_list');
+    if (typeof subject_id === 'undefined') missingParams.push('subjectId');
+    if (typeof week_number === 'undefined') missingParams.push('weekNumber');
+    if (typeof day_number === 'undefined') missingParams.push('dayNumber');
+    if (typeof pair_number === 'undefined') missingParams.push('pairNumber');
+    if (typeof lesson_type === 'undefined') missingParams.push('lessonType');
+    if (typeof visit_format === 'undefined') missingParams.push('visitFormat');
 
     if (missingParams.length > 0) {
         return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
@@ -502,10 +504,10 @@ app.post('/api/addPair', (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const groupsList = groupId ? JSON.stringify(groupId) : null;
-    const teachersList = teacherId ? JSON.stringify(teacherId) : null;
+    const groupsList = groupId ? JSON.stringify(groups_list) : null;
+    const teachersList = teacherId ? JSON.stringify(teachers_list) : null;
 
-    pool.query(query, [semester, groupsList, teachersList, subjectId, weekNumber, dayNumber, pairNumber, lessonType, visitFormat, audience], (err, result) => {
+    pool.query(query, [semester, groupsList, teachersList, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error adding pair');
@@ -517,18 +519,21 @@ app.post('/api/addPair', (req, res) => {
 });
 
 app.put('/api/editPair', (req, res) => {
-    const { id, semester, groupId, teacherId, subjectId, weekNumber, dayNumber, pairNumber, lessonType, visitFormat, audience } = req.body;
+    const { id, semester_number, groups_list, teachers_list, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience } = req.body;
 
     const missingParams = [];
 
     if (typeof id === 'undefined') missingParams.push('id');
-    if (typeof semester === 'undefined') missingParams.push('semester');
-    if (typeof subjectId === 'undefined') missingParams.push('subjectId');
-    if (typeof weekNumber === 'undefined') missingParams.push('weekNumber');
-    if (typeof dayNumber === 'undefined') missingParams.push('dayNumber');
-    if (typeof pairNumber === 'undefined') missingParams.push('pairNumber');
-    if (typeof lessonType === 'undefined') missingParams.push('lessonType');
-    if (typeof visitFormat === 'undefined') missingParams.push('visitFormat');
+    if (typeof semester_number === 'undefined') missingParams.push('semester');
+    if (typeof groups_list === 'undefined') missingParams.push('groups_list');
+    if (typeof teachers_list === 'undefined') missingParams.push('teachers_list');
+    if (typeof subject_id === 'undefined') missingParams.push('subjectId');
+    if (typeof week_number === 'undefined') missingParams.push('weekNumber');
+    if (typeof day_number === 'undefined') missingParams.push('dayNumber');
+    if (typeof pair_number === 'undefined') missingParams.push('pairNumber');
+    if (typeof lesson_type === 'undefined') missingParams.push('lessonType');
+    if (typeof visit_format === 'undefined') missingParams.push('visitFormat');
+    if (typeof audience === 'undefined') missingParams.push('audience');
 
     if (missingParams.length > 0) {
         return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
@@ -540,10 +545,10 @@ app.put('/api/editPair', (req, res) => {
         WHERE id = ?
     `;
 
-    const groupsList = groupId ? JSON.stringify(groupId) : null;
-    const teachersList = teacherId ? JSON.stringify(teacherId) : null;
+    const groupsList = groupId ? JSON.stringify(groups_list) : null;
+    const teachersList = teacherId ? JSON.stringify(teachers_list) : null;
 
-    pool.query(query, [semester, groupsList, teachersList, subjectId, weekNumber, dayNumber, pairNumber, lessonType, visitFormat, audience, id], (err, result) => {
+    pool.query(query, [semester_number, groupsList, teachersList, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience, id], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error editing pair');
@@ -555,7 +560,7 @@ app.put('/api/editPair', (req, res) => {
 });
 
 app.get('/api/getPairsByCriteria', (req, res) => {
-    const { semester, groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
+    const { semester_number, groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
 
     const missingParams = [];
 
