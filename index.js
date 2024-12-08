@@ -36,13 +36,15 @@ app.get('/api/combinedList', (req, res) => {
 
     pool.query(queryGroups, (err, groups) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing groups query:', err);
+            res.status(500).send('Error fetching groups data');
             return;
         }
 
         pool.query(queryTeachers, (err, teachers) => {
             if (err) {
-                res.status(500).send(`${err}`);
+                console.error('Error executing teachers query:', err);
+                res.status(500).send('Error fetching teachers data');
                 return;
             }
 
@@ -92,7 +94,8 @@ app.get('/api/getGroup', (req, res) => {
   `;
     pool.query(sql, [groupName, semester], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching data');
             return;
         }
 
@@ -145,7 +148,8 @@ app.get('/api/getTeacher', (req, res) => {
 
     pool.query(sql, [Number(teacherId), semester], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching data');
             return;
         }
 
@@ -223,7 +227,8 @@ app.get('/api/groups', (req, res) => {
     const query = 'SELECT * FROM groups_TB';
     pool.query(query, (err, results) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching groups data');
             return;
         }
         res.json(results);
@@ -235,7 +240,8 @@ app.post('/api/groups', (req, res) => {
     const query = 'INSERT INTO groups_TB (group_code, specialty_id, number_of_students) VALUES (?, ?, ?)';
     pool.query(query, [group_code, specialty_id, number_of_students], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding group');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -249,7 +255,8 @@ app.put('/api/groups/:groupCode', (req, res) => {
     const query = 'UPDATE groups_TB SET specialty_id = ?, number_of_students = ? WHERE group_code = ?';
     pool.query(query, [specialty_id, number_of_students, groupCode], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating group');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -262,7 +269,8 @@ app.delete('/api/groups/:groupCode', (req, res) => {
     const query = 'DELETE FROM groups_TB WHERE group_code = ?';
     pool.query(query, [groupCode], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting group');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -274,7 +282,8 @@ app.get('/api/teachers', (req, res) => {
     const query = 'SELECT * FROM teachers_TB';
     pool.query(query, (err, results) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching teachers data');
             return;
         }
         res.json(results);
@@ -286,7 +295,8 @@ app.post('/api/teachers', (req, res) => {
     const query = 'INSERT INTO teachers_TB (full_name, department, post) VALUES (?, ?, ?)';
     pool.query(query, [full_name, department, post], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error adding teacher');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -300,7 +310,8 @@ app.put('/api/teachers/:teacherId', (req, res) => {
     const query = 'UPDATE teachers_TB SET full_name = ?, department = ?, post = ? WHERE id = ?';
     pool.query(query, [full_name, department, post, teacherId], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating teacher');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -313,7 +324,8 @@ app.delete('/api/teachers/:teacherId', (req, res) => {
     const query = 'DELETE FROM teachers_TB WHERE id = ?';
     pool.query(query, [teacherId], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting teacher');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -325,7 +337,8 @@ app.get('/api/specialties', (req, res) => {
     const query = 'SELECT * FROM specialty_TB';
     pool.query(query, (err, results) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching specialties data');
             return;
         }
         res.json(results);
@@ -336,7 +349,8 @@ app.get('/api/curriculums', async (req, res) => {
     const query = 'SELECT * FROM curriculum_TB';
     pool.query(query, (err, results) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching specialties data');
             return;
         }
         res.json(results);
@@ -348,21 +362,24 @@ app.post('/api/curriculums', (req, res) => {
 
     pool.getConnection((err, connection) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error getting connection:', err);
+            res.status(500).send('Error adding curriculum');
             return;
         }
 
         connection.beginTransaction(err => {
             if (err) {
-                res.status(500).send(`${err}`);
+                console.error('Error starting transaction:', err);
+                res.status(500).send('Error adding curriculum');
                 return;
             }
 
             const query1 = 'INSERT INTO curriculum_TB (subject_name) VALUES (?)';
             connection.query(query1, [subject_name], (err, result) => {
                 if (err) {
+                    console.error('Error executing query:', err);
                     connection.rollback(() => {
-                        res.status(500).send(`${err}`);
+                        res.status(500).send('Error adding curriculum');
                     });
                     return;
                 }
@@ -375,16 +392,18 @@ app.post('/api/curriculums', (req, res) => {
                 const query2 = `UPDATE curriculum_TB SET related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}) WHERE id = ?`;
                 connection.query(query2, [lastId], (err, result) => {
                     if (err) {
+                        console.error('Error executing query:', err);
                         connection.rollback(() => {
-                            res.status(500).send(`${err}`);
+                            res.status(500).send('Error updating curriculum');
                         });
                         return;
                     }
 
                     connection.commit(err => {
                         if (err) {
+                            console.error('Error committing transaction:', err);
                             connection.rollback(() => {
-                                res.status(500).send(`${err}`);
+                                res.status(500).send('Error adding curriculum');
                             });
                             return;
                         }
@@ -409,7 +428,8 @@ app.put('/api/curriculums/:curriculumId', (req, res) => {
     const query = `UPDATE curriculum_TB SET subject_name = ?, related_teachers = JSON_ARRAY(${teachersArray}), related_groups = JSON_ARRAY(${groupsArray}) WHERE id = ?`;
     pool.query(query, [subject_name, curriculumId], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating teacher');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -422,7 +442,8 @@ app.delete('/api/curriculums/:curriculumId', (req, res) => {
     const query = 'DELETE FROM curriculum_TB WHERE id = ?';
     pool.query(query, [curriculumId], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting teacher');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -450,7 +471,8 @@ app.post('/api/updateSchedule', (req, res) => {
     const query = `CALL UpdateSchedule(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     pool.query(query, [semester, sourceId, sourceWeek, sourceDay, sourcePair, destinationId, destinationWeek, destinationDay, destinationPair], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error updating schedule');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -484,6 +506,7 @@ app.post('/api/addPair', (req, res) => {
 
     pool.query(query, [semester_number, groups_list, teachers_list, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience], (err, result) => {
         if (err) {
+            console.error('Error executing query:', err);
             res.status(500).send(`${err}`);
             return;
         }
@@ -521,6 +544,7 @@ app.put('/api/editPair', (req, res) => {
 
     pool.query(query, [semester_number, groups_list, teachers_list, subject_id, week_number, day_number, pair_number, lesson_type, visit_format, audience, id], (err, result) => {
         if (err) {
+            console.error('Error executing query:', err);
             res.status(500).send(`${err}`);
             return;
         }
@@ -560,7 +584,8 @@ app.get('/api/getPairsByCriteria', (req, res) => {
 
     pool.query(query, [semester, weekNumber, dayNumber, pairNumber, groupId, groupId, (!teacherId) ? null : Number(teacherId), (!teacherId) ? null : Number(teacherId)], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching pairs');
             return;
         }
         res.json(result);
@@ -581,7 +606,8 @@ app.delete('/api/deletePair/:id', (req, res) => {
     const query = 'DELETE FROM schedule_TB WHERE id = ?';
     pool.query(query, [id], (err, result) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error deleting pair');
             return;
         }
         lastDatabaseUpdate = new Date();
@@ -615,11 +641,13 @@ app.get('/api/nullGroups', (req, res) => {
     const query = 'SELECT * FROM groups_TB where number_of_students = 0';
     pool.query(query, (err, results) => {
         if (err) {
-            res.status(500).send(`${err}`);
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching groups data');
             return;
         }
         res.json(results);
     });
 });
+
 
 export default app;
