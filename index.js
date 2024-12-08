@@ -638,7 +638,7 @@ app.post('/api/updateGroups', (req, res) => {
 });
 
 app.get('/api/nullGroups', (req, res) => {
-    const query = 'SELECT * FROM groups_TB where number_of_students = 0';
+    const query = 'SELECT group_code FROM groups_TB where number_of_students = 0';
     pool.query(query, (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
