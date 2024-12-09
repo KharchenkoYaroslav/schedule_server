@@ -167,7 +167,7 @@ function hashPassword(password) {
 app.post('/api/login', async (req, res) => {
     const { login, password } = req.body;
 
-    const query = 'SELECT * FROM admin_list_TB WHERE login = ?';
+    const query = 'SELECT id, login, password_hash FROM admin_list_TB WHERE login = ?';
     pool.query(query, [login], async (err, results) => {
         if (err) {
             console.error('Помилка виконання запиту:', err);
