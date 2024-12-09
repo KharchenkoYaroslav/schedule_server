@@ -32,7 +32,7 @@ app.get('/api/lastDatabaseUpdate', (req, res) => {
 
 app.get('/api/combinedList', (req, res) => {
     const queryGroups = 'SELECT group_code FROM groups_TB';
-    const queryTeachers = 'SELECT id, full_name FROM teachers_TB';
+    const queryTeachers = 'SELECT id, full_name, department FROM teachers_TB';
 
     pool.query(queryGroups, (err, groups) => {
         if (err) {
