@@ -249,10 +249,11 @@ app.post('/api/groups', (req, res) => {
     });
 });
 
-app.put('/api/groups', (req, res) => {
-    const { group_code, new_group_code, specialty_id, number_of_students } = req.body;
+app.put('/api/groups/:groupCode', (req, res) => {
+    const { groupCode } = req.params;
+    const { group_code, specialty_id, number_of_students } = req.body;
     const query = 'UPDATE groups_TB SET group_code = ?, specialty_id = ?, number_of_students = ? WHERE group_code = ?';
-    pool.query(query, [new_group_code, specialty_id, number_of_students, group_code], (err, result) => {
+    pool.query(query, [group_code, specialty_id, number_of_students, groupCode], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error updating group');
