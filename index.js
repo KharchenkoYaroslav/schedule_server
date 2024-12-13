@@ -555,11 +555,12 @@ app.put('/api/editPair', (req, res) => {
 
 
 app.get('/api/getPairsByCriteria', (req, res) => {
-    const { semester, groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
+    const { semester, subjectId , groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
 
     const missingParams = [];
 
     if (typeof semester === 'undefined') missingParams.push('semester');
+    if (typeof subjectId === 'undefined') missingParams.push('subjectId');
     if (typeof weekNumber === 'undefined') missingParams.push('weekNumber');
     if (typeof dayNumber === 'undefined') missingParams.push('dayNumber');
     if (typeof pairNumber === 'undefined') missingParams.push('pairNumber');
@@ -571,6 +572,7 @@ app.get('/api/getPairsByCriteria', (req, res) => {
     const query = `
         SELECT * FROM schedule_TB
         WHERE semester_number = ?
+        AND subject_id = ?
         AND week_number = ?
         AND day_number = ?
         AND pair_number = ?
@@ -582,7 +584,7 @@ app.get('/api/getPairsByCriteria', (req, res) => {
         );
     `;
 
-    pool.query(query, [semester, weekNumber, dayNumber, pairNumber, groupId, groupId, (!teacherId) ? null : Number(teacherId), (!teacherId) ? null : Number(teacherId)], (err, result) => {
+    pool.query(query, [semester,subjectId, weekNumber, dayNumber, pairNumber, groupId, groupId, (!teacherId) ? null : Number(teacherId), (!teacherId) ? null : Number(teacherId)], (err, result) => {
         if (err) {
             console.error('Error executing query:', err);
             res.status(500).send('Error fetching pairs');
