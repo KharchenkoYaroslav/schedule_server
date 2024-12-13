@@ -555,6 +555,44 @@ app.put('/api/editPair', (req, res) => {
 
 
 app.get('/api/getPairsByCriteria', (req, res) => {
+    const { semester , groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
+
+    const missingParams = [];
+
+    if (typeof semester === 'undefined') missingParams.push('semester');
+    if (typeof weekNumber === 'undefined') missingParams.push('weekNumber');
+    if (typeof dayNumber === 'undefined') missingParams.push('dayNumber');
+    if (typeof pairNumber === 'undefined') missingParams.push('pairNumber');
+
+    if (missingParams.length > 0) {
+        return res.status(400).send(`Missing required parameters: ${missingParams.join(', ')}`);
+    }
+
+    const query = `
+        SELECT * FROM schedule_TB
+        WHERE semester_number = ?
+        AND week_number = ?
+        AND day_number = ?
+        AND pair_number = ?
+        AND (
+            ? IS NULL OR JSON_CONTAINS(groups_list, JSON_QUOTE(?), "$")
+        )
+        AND (
+            ? IS NULL OR JSON_CONTAINS(teachers_list, JSON_OBJECT('id', ?), "$")
+        );
+    `;
+
+    pool.query(query, [semester, weekNumber, dayNumber, pairNumber, groupId, groupId, (!teacherId) ? null : Number(teacherId), (!teacherId) ? null : Number(teacherId)], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error fetching pairs');
+            return;
+        }
+        res.json(result);
+    });
+});
+
+app.get('/api/getPairByCriteria', (req, res) => {
     const { semester, subjectId , groupId, teacherId, weekNumber, dayNumber, pairNumber } = req.query;
 
     const missingParams = [];
