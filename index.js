@@ -201,7 +201,7 @@ app.post('/api/login', async (req, res) => {
     });
 });
 
-app.get('/api/getAdminName', async (req, res) => {
+app.post('/api/getAdminName', async (req, res) => {
     const { login } = req.body;
 
     const query = 'SELECT login FROM admin_list_TB WHERE login = ?';
